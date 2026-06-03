@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSA Manager — Salve o Supermercado</title>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap');
+:root{
+  --bg:#070a12;--s1:#0d1220;--s2:#121928;--s3:#182030;--s4:#1e2840;
+  --rim:rgba(255,255,255,.07);--rim2:rgba(255,255,255,.14);--rim3:rgba(255,255,255,.22);
+  --c:#00e5ff;--cg:rgba(0,229,255,.22);
+  --l:#b2ff59;--lg:rgba(178,255,89,.2);
+  --a:#ffca28;--ag:rgba(255,202,40,.2);
+  --r:#ff4d6d;--rg:rgba(255,77,109,.2);
+  --v:#d580ff;--vg:rgba(213,128,255,.2);
+  --o:#ff9800;--og:rgba(255,152,0,.2);
+  --t1:#f0f6ff;--t2:#b8cce0;--t3:#7a9cbf;
+  --rr:10px;--rm:16px;--rl:22px;--rxl:30px;
+  --sp:cubic-bezier(.34,1.56,.64,1);--eo:cubic-bezier(.22,1,.36,1);
+  --fd:'Syne',sans-serif;--fm:'Space Mono',monospace;--fb:'Space Grotesk',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;background:var(--bg);color:var(--t1);font-family:var(--fb);font-size:15px;line-height:1.5}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--rim3);border-radius:4px}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 900px 600px at 0% 0%,rgba(0,229,255,.07) 0%,transparent 70%),radial-gradient(ellipse 700px 500px at 100% 100%,rgba(213,128,255,.07) 0%,transparent 70%),radial-gradient(ellipse 600px 400px at 60% 40%,rgba(178,255,89,.04) 0%,transparent 70%)}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,229,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.028) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse 120% 120% at 50% 50%,black 40%,transparent 100%);animation:gridmove 30s linear infinite}
+@keyframes gridmove{to{background-position:48px 48px}}
+.screen{display:none;position:relative;z-index:1}.screen.active{display:block}
+#intro-screen.active,#ranking-screen.active,#end-screen.active{display:flex}
+
+/* ── ORBS ── */
+.orb{position:absolute;border-radius:50%;filter:blur(100px);pointer-events:none;animation:orbf 10s ease-in-out infinite alternate}
+.orb1{width:600px;height:600px;background:rgba(0,229,255,.08);top:-200px;left:-150px}
+.orb2{width:500px;height:500px;background:rgba(213,128,255,.07);bottom:-150px;right:-100px;animation-delay:4s}
+.orb3{width:400px;height:400px;background:rgba(178,255,89,.05);top:30%;left:55%;animation-delay:8s}
+@keyframes orbf{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.15)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes fadeup{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes evin{from{opacity:0;transform:translateY(-20px) scale(.96)}to{opacity:1;transform:none}}
+
+/* ════ INTRO ════ */
+#intro-screen{min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:clamp(1.5rem,4vw,3rem) 1rem;overflow:hidden}
+.intro-wrap{position:relative;z-index:2;width:100%;max-width:860px;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.i-badge{display:inline-flex;align-items:center;gap:.7rem;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25);border-radius:100px;padding:.45rem 1.2rem .45rem .7rem;font-family:var(--fm);font-size:.68rem;letter-spacing:.18em;color:var(--c);animation:fadeup .5s var(--eo) both}
+.i-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--l);box-shadow:0 0 10px var(--l);animation:blink 2s ease infinite}
+.i-logo{font-family:var(--fd);font-size:clamp(3.5rem,10vw,7rem);font-weight:800;line-height:.85;letter-spacing:-.03em;text-align:center;animation:fadeup .6s .08s var(--eo) both}
+.i-logo .osa{display:block;background:linear-gradient(130deg,var(--c) 0%,#00ffcc 40%,var(--l) 80%,var(--c) 100%);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:logoshine 5s linear infinite;filter:drop-shadow(0 0 50px rgba(0,229,255,.5))}
+@keyframes logoshine{from{background-position:0% 50%}to{background-position:300% 50%}}
+.i-logo .sub{display:block;color:var(--t1);font-size:.38em;letter-spacing:.04em;margin-top:.15em;opacity:.9}
+.i-tag{font-size:clamp(.95rem,2vw,1.1rem);color:var(--t2);text-align:center;max-width:520px;line-height:1.75;animation:fadeup .6s .16s var(--eo) both}
+
+/* name + profile setup */
+.setup-box{width:100%;max-width:640px;background:var(--s2);border:1px solid var(--rim2);border-radius:var(--rxl);padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem;animation:fadeup .6s .22s var(--eo) both;position:relative;overflow:hidden}
+.setup-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:.5}
+.setup-lbl{font-family:var(--fm);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:.4rem}
+.name-input{width:100%;background:var(--s3);border:1px solid var(--rim2);border-radius:var(--rm);padding:.75rem 1rem;color:var(--t1);font-family:var(--fb);font-size:1rem;font-weight:600;outline:none;transition:border-color .2s,box-shadow .2s}
+.name-input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+.name-input::placeholder{color:var(--t3)}
+.profile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+@media(min-width:500px){.profile-grid{grid-template-columns:repeat(4,1fr)}}
+.pcard{background:var(--s3);border:2px solid var(--rim2);border-radius:var(--rm);padding:.85rem .6rem;text-align:center;cursor:pointer;transition:all .2s var(--sp)}
+.pcard:hover{transform:translateY(-3px);border-color:var(--rim3)}
+.pcard.sel{border-color:var(--c);background:rgba(0,229,255,.08);box-shadow:0 0 20px rgba(0,229,255,.15)}
+.pcard-ico{font-size:1.6rem;display:block;margin-bottom:.35rem}
+.pcard-name{font-weight:700;font-size:.8rem;display:block;margin-bottom:.15rem;color:var(--t1)}
+.pcard-desc{font-size:.66rem;color:var(--t2);line-height:1.3}
+
+.i-start{font-family:var(--fm);font-size:.82rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:1rem 3.5rem;border:none;border-radius:100px;background:linear-gradient(135deg,var(--c),var(--l));color:#060a10;cursor:pointer;position:relative;overflow:hidden;transition:transform .3s var(--sp),box-shadow .3s;box-shadow:0 0 40px rgba(0,229,255,.3);animation:fadeup .6s .4s var(--eo) both}
+.i-start::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--l),var(--c));opacity:0;transition:opacity .3s}
+.i-start:hover{transform:translateY(-5px) scale(1.04);box-shadow:0 12px 50px rgba(0,229,255,.5)}
+.i-start:hover::after{opacity:1}
+.i-start:active{transform:translateY(-1px) scale(.98)}
+.i-start span{position:relative;z-index:1}
+.i-rank-btn{font-family:var(--fm);font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:.65rem 2rem;border:1px solid var(--rim2);border-radius:100px;background:transparent;color:var(--t2);cursor:pointer;transition:all .2s;animation:fadeup .6s .5s var(--eo) both}
+.i-rank-btn:hover{border-color:var(--rim3);color:var(--t1)}
+
+/* ════ GAME ════ */
+#game-screen{min-height:100vh;display:none;flex-direction:column;padding:.7rem;gap:.7rem;max-width:1500px;margin:0 auto}
+#game-screen.active{display:flex}
+.topbar{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;background:rgba(13,18,32,.8);backdrop-filter:blur(24px);border:1px solid var(--rim2);border-radius:var(--rm);padding:.55rem .9rem;position:sticky;top:.7rem;z-index:200}
+.tb-logo{font-family:var(--fd);font-size:1.05rem;font-weight:800;background:linear-gradient(90deg,var(--c),var(--l));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
+.live-chip{display:inline-flex;align-items:center;gap:.5rem;background:rgba(178,255,89,.1);border:1px solid rgba(178,255,89,.3);border-radius:100px;padding:.22rem .7rem;font-family:var(--fm);font-size:.6rem;letter-spacing:.12em;color:var(--l)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--l);box-shadow:0 0 8px var(--l);animation:blink 1.5s ease infinite}
+.day-chip{font-family:var(--fm);font-size:.68rem;font-weight:700;color:var(--a);background:rgba(255,202,40,.1);border:1px solid rgba(255,202,40,.3);padding:.22rem .8rem;border-radius:100px;letter-spacing:.1em}
+.diff-chip{font-family:var(--fm);font-size:.6rem;font-weight:700;padding:.22rem .7rem;border-radius:100px;border:1px solid;letter-spacing:.1em}
+.diff-easy{color:var(--l);background:rgba(178,255,89,.1);border-color:rgba(178,255,89,.3)}
+.diff-mid{color:var(--a);background:rgba(255,202,40,.1);border-color:rgba(255,202,40,.3)}
+.diff-hard{color:var(--r);background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.3)}
+.diff-crisis{color:var(--v);background:rgba(213,128,255,.1);border-color:rgba(213,128,255,.3);animation:blink 1.2s ease infinite}
+.profile-chip{font-family:var(--fm);font-size:.6rem;padding:.22rem .7rem;border-radius:100px;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.07);color:var(--c);letter-spacing:.08em}
+.dtrack{display:flex;align-items:center;margin-left:auto}
+.dt-node{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.6rem;font-weight:700;border:1.5px solid var(--rim2);color:var(--t3);transition:all .4s var(--sp);flex-shrink:0}
+.dt-node.done{background:var(--c);color:#070a12;border-color:var(--c);box-shadow:0 0 14px var(--cg)}
+.dt-node.cur{background:var(--a);color:#070a12;border-color:var(--a);box-shadow:0 0 16px var(--ag);animation:nodepulse 2s ease infinite}
+.dt-node.crisis{background:var(--v);color:#fff;border-color:var(--v);box-shadow:0 0 16px var(--vg);animation:nodepulse 1s ease infinite}
+@keyframes nodepulse{0%,100%{box-shadow:0 0 16px var(--ag)}50%{box-shadow:0 0 28px rgba(255,202,40,.5)}}
+.dt-line{width:14px;height:1.5px;background:var(--rim2);flex-shrink:0;transition:background .4s}
+.dt-line.done{background:var(--c)}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
+@media(max-width:920px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:580px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rm);padding:.85rem 1rem;position:relative;overflow:hidden;transition:border-color .3s,transform .2s;cursor:default}
+.kpi:hover{border-color:var(--rim3);transform:translateY(-2px)}
+.kpi-glow{position:absolute;top:-30px;right:-20px;width:90px;height:90px;border-radius:50%;filter:blur(35px);opacity:.5;pointer-events:none}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+.kpi-lbl{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);font-family:var(--fm)}
+.kpi-ico{font-size:.9rem;opacity:.8}
+.kpi-val{font-family:var(--fm);font-size:1.55rem;font-weight:700;line-height:1;margin-bottom:.5rem;transition:color .4s}
+.kpi-bar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.kpi-fill{height:100%;border-radius:2px;transition:width .8s var(--eo);position:relative}
+.kpi-fill::after{content:'';position:absolute;right:0;top:-1px;width:3px;height:5px;border-radius:1px;background:rgba(255,255,255,.9)}
+.kc .kpi-val{color:var(--c)}.kc .kpi-fill{background:linear-gradient(90deg,var(--c),rgba(0,229,255,.4));box-shadow:0 0 8px var(--cg)}.kc .kpi-glow{background:var(--c)}
+.kl .kpi-val{color:var(--l)}.kl .kpi-fill{background:linear-gradient(90deg,var(--l),rgba(178,255,89,.4));box-shadow:0 0 8px var(--lg)}.kl .kpi-glow{background:var(--l)}
+.kv .kpi-val{color:var(--v)}.kv .kpi-fill{background:linear-gradient(90deg,var(--v),rgba(213,128,255,.4));box-shadow:0 0 8px var(--vg)}.kv .kpi-glow{background:var(--v)}
+.kr .kpi-val{color:var(--r)}.kr .kpi-fill{background:linear-gradient(90deg,var(--r),rgba(255,77,109,.4));box-shadow:0 0 8px var(--rg)}.kr .kpi-glow{background:var(--r)}
+.ka .kpi-val{color:var(--a)}.ka .kpi-fill{background:linear-gradient(90deg,var(--a),rgba(255,202,40,.4));box-shadow:0 0 8px var(--ag)}.ka .kpi-glow{background:var(--a)}
+
+/* body */
+.gbody{display:grid;grid-template-columns:1fr 380px;gap:.7rem;flex:1}
+@media(max-width:1060px){.gbody{grid-template-columns:1fr}}
+
+/* event panel */
+.evpanel{background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rxl);padding:1.5rem;display:flex;flex-direction:column;gap:1rem;min-height:520px;position:relative;overflow:hidden}
+.evpanel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:.5}
+.ep-hd{display:flex;align-items:center;justify-content:space-between}
+.ep-lbl{display:flex;align-items:center;gap:.6rem;font-family:var(--fm);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--c)}
+.ep-dot{width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);animation:blink 1.5s ease infinite}
+.ep-info{font-family:var(--fm);font-size:.6rem;color:var(--t3);letter-spacing:.1em}
+.ev-card{background:var(--s2);border:1px solid var(--rim2);border-radius:var(--rl);padding:1.3rem;position:relative;overflow:hidden;animation:evin .4s var(--sp) both}
+.ev-accent{position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:3px}
+.ev-accent-top{position:absolute;top:0;left:0;right:0;height:1px;opacity:.4}
+.ev-diff-badge{position:absolute;top:.9rem;right:.9rem;font-family:var(--fm);font-size:.55rem;font-weight:700;letter-spacing:.1em;padding:.2rem .55rem;border-radius:100px;border:1px solid}
+.ev-type{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--fm);font-size:.6rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;padding:.3rem .85rem;border-radius:100px;margin-bottom:.9rem;margin-left:.2rem}
+.ev-title{font-family:var(--fd);font-size:1.15rem;font-weight:800;line-height:1.25;margin-bottom:.5rem;padding-left:.2rem;color:var(--t1)}
+.ev-desc{font-size:.86rem;color:var(--t2);line-height:1.65;padding-left:.2rem;margin-bottom:.9rem}
+.ev-imps{display:flex;gap:.4rem;flex-wrap:wrap;padding-left:.2rem;margin-bottom:1rem}
+.ev-imp{font-size:.66rem;font-family:var(--fm);font-weight:700;padding:.22rem .65rem;border-radius:6px;border:1px solid}
+.eii{color:var(--r);background:rgba(255,77,109,.12);border-color:rgba(255,77,109,.3)}
+.eip{color:var(--l);background:rgba(178,255,89,.12);border-color:rgba(178,255,89,.3)}
+.eiw{color:var(--a);background:rgba(255,202,40,.12);border-color:rgba(255,202,40,.3)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+@media(max-width:600px){.choices{grid-template-columns:1fr}}
+.choice{background:var(--s3);border:1px solid var(--rim2);border-radius:var(--rm);padding:1rem;cursor:pointer;text-align:left;transition:all .22s var(--eo);position:relative;overflow:hidden}
+.choice::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--c),var(--l));opacity:0;transition:opacity .22s}
+.choice:hover{border-color:rgba(0,229,255,.5);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.choice:hover::before{opacity:.07}
+.choice:active{transform:translateY(0)}
+.ch-inner{position:relative;z-index:1}
+.ch-icon{font-size:1.5rem;margin-bottom:.45rem;display:block}
+.ch-name{font-weight:700;font-size:.9rem;display:block;margin-bottom:.2rem;color:var(--t1)}
+.ch-sub{font-size:.76rem;color:var(--t2)}
+.profile-bonus{font-size:.65rem;color:var(--c);margin-top:.3rem;font-style:italic;display:none}
+.no-ev{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center}
+.no-ev-ring{width:70px;height:70px;border-radius:50%;border:2px solid var(--rim2);display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:var(--s2)}
+.no-ev-text{font-size:.95rem;color:var(--t2)}
+.btn-next{font-family:var(--fm);font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.8rem 2.2rem;border:none;border-radius:100px;background:linear-gradient(135deg,var(--a),var(--o));color:#060a10;cursor:pointer;transition:transform .25s var(--sp),box-shadow .25s;box-shadow:0 0 20px rgba(255,202,40,.25)}
+.btn-next:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(255,202,40,.4)}
+.logbox{margin-top:auto;background:var(--s2);border:1px solid var(--rim);border-radius:var(--rm);padding:.8rem}
+.log-hd{font-family:var(--fm);font-size:.54rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+.log-hd::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.loglist{display:flex;flex-direction:column;gap:.28rem;overflow-y:auto;max-height:96px}
+.le{font-size:.72rem;padding:.25rem .5rem;border-radius:5px;border-left:2px solid transparent;animation:lin .25s ease both;color:var(--t2)}
+@keyframes lin{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.le.good{color:var(--l);border-color:var(--l);background:rgba(178,255,89,.05)}
+.le.bad{color:var(--r);border-color:var(--r);background:rgba(255,77,109,.05)}
+.le.info{color:var(--c);border-color:var(--c);background:rgba(0,229,255,.05)}
+.le-t{opacity:.5;margin-right:.35rem;font-family:var(--fm);font-size:.6rem}
+
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;gap:.7rem}
+.scard{background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rxl);padding:1.2rem;position:relative;overflow:hidden}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--rim3),transparent)}
+.sc-ttl{font-family:var(--fm);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem}
+.sc-ttl-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:.8rem}
+.gauge-svg{width:160px;height:100px;overflow:visible}
+.g-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:12;stroke-linecap:round}
+.g-track{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s var(--eo),stroke .4s}
+.g-num{font-family:var(--fm);font-size:2rem;font-weight:700;text-anchor:middle;dominant-baseline:middle;transition:fill .4s}
+.g-unit{font-family:var(--fm);font-size:.65rem;fill:var(--t3);text-anchor:middle}
+.g-status{font-size:.78rem;font-weight:600;color:var(--t2);text-align:center;display:flex;align-items:center;gap:.4rem;justify-content:center}
+.tiers{display:flex;flex-direction:column;gap:.3rem}
+.tier{display:flex;align-items:center;gap:.6rem;padding:.4rem .65rem;border-radius:8px;border:1px solid transparent;transition:all .3s;font-size:.74rem;cursor:default}
+.tier.active{background:rgba(255,255,255,.05);border-color:var(--rim2)}
+.tier-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tier-name{flex:1;color:var(--t2)}.tier.active .tier-name{color:var(--t1);font-weight:600}
+.tier-val{font-family:var(--fm);font-size:.62rem;color:var(--t3)}.tier.active .tier-val{color:var(--t2)}
+
+/* minigame */
+.mg-ttl{font-family:var(--fm);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--v);margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+.mg-ttl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--v);box-shadow:0 0 8px var(--v)}
+.mg-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
+.mg-stat{background:var(--s2);border:1px solid var(--rim2);border-radius:var(--rr);padding:.55rem .4rem;text-align:center}
+.mg-sv{font-family:var(--fm);font-size:1.1rem;font-weight:700;display:block;line-height:1}
+.mg-sl{font-size:.56rem;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem;display:block}
+.mg-timer{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:.7rem;position:relative}
+.mg-tfill{height:100%;border-radius:3px;position:absolute;left:0;top:0;background:linear-gradient(90deg,var(--r),var(--a),var(--l));background-size:200% 100%;transition:width .12s linear;animation:tshine 2s linear infinite}
+@keyframes tshine{from{background-position:100% 0}to{background-position:-100% 0}}
+.mg-timer-num{position:absolute;right:0;top:-18px;font-family:var(--fm);font-size:.62rem;color:var(--t3);transition:color .3s}
+.mg-depot{background:var(--s2);border:2px dashed rgba(255,255,255,.1);border-radius:var(--rm);padding:.55rem;margin-bottom:.65rem;min-height:72px;display:flex;flex-wrap:wrap;gap:.35rem;align-items:flex-start;padding-top:1.4rem;position:relative;transition:border-color .2s,background .2s}
+.mg-depot.dov{border-color:var(--c);background:rgba(0,229,255,.05)}
+.mg-dlbl{position:absolute;top:.4rem;left:.6rem;font-family:var(--fm);font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);pointer-events:none;display:flex;align-items:center;gap:.4rem}
+.mg-dlbl::before{content:'📦';font-size:.7rem}
+.mprod{width:48px;height:52px;background:var(--s3);border:1px solid var(--rim2);border-radius:var(--rr);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:grab;user-select:none;flex-shrink:0;transition:transform .15s var(--sp),box-shadow .15s,opacity .15s,border-color .15s;position:relative;overflow:hidden}
+.mprod::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.07),transparent);opacity:0;transition:opacity .15s}
+.mprod:hover{transform:scale(1.14) translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:20;border-color:var(--rim3)}
+.mprod:hover::before{opacity:1}
+.mprod.dragging{opacity:.3;cursor:grabbing;transform:scale(.9)}
+.mp-e{font-size:1.4rem;line-height:1;pointer-events:none}
+.mp-c{font-size:.38rem;font-family:var(--fm);letter-spacing:.05em;text-transform:uppercase;pointer-events:none;padding:1px 4px;border-radius:3px;margin-top:1px;white-space:nowrap}
+.shelves{display:flex;flex-direction:column;gap:.4rem}
+.shelf-row{display:flex;align-items:center;gap:.4rem}
+.shelf-lbl{width:58px;flex-shrink:0;text-align:right;font-family:var(--fm);font-size:.52rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.2}
+.shelf-slots{display:flex;gap:.28rem;flex:1;background:var(--s2);border-radius:var(--rr);padding:.28rem;border:2px dashed rgba(255,255,255,.09);min-height:46px;align-items:center;transition:border-color .2s,background .2s,box-shadow .2s}
+.shelf-slots.dov{border-color:var(--c);border-style:solid;background:rgba(0,229,255,.07);box-shadow:inset 0 0 12px rgba(0,229,255,.1)}
+.sslot{width:40px;height:40px;border-radius:7px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;transition:all .2s var(--sp);border:1px solid transparent}
+.sslot.filled{background:rgba(178,255,89,.12);border-color:rgba(178,255,89,.25);animation:spop .3s var(--sp)}
+@keyframes spop{0%{transform:scale(.5)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.sslot.wrong{animation:swrong .35s ease;border-color:rgba(255,77,109,.4);background:rgba(255,77,109,.1)}
+@keyframes swrong{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.combo-badge{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--fd);font-size:3rem;font-weight:800;pointer-events:none;z-index:5000;animation:combopop .9s var(--sp) forwards;white-space:nowrap}
+@keyframes combopop{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-10deg)}35%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(3deg)}65%{transform:translate(-50%,-50%) scale(1) rotate(0)}100%{opacity:0;transform:translate(-50%,-65%) scale(.85)}}
+.mg-btns{display:flex;gap:.5rem;margin-top:.65rem}
+.mg-btn{flex:1;font-family:var(--fm);font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.62rem;border-radius:var(--rr);cursor:pointer;transition:all .2s}
+.mg-btn.pri{background:linear-gradient(135deg,var(--v),#8b2fff);border:none;color:#fff}
+.mg-btn.sec{background:transparent;border:1px solid var(--rim2);color:var(--t2)}
+.mg-btn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.mg-btn.pri:hover{box-shadow:0 4px 22px var(--vg)}
+.mg-btn.sec:hover{border-color:var(--rim3);color:var(--t1)}
+
+/* toast */
+.toast{position:fixed;bottom:1.4rem;right:1.4rem;background:rgba(13,18,32,.95);backdrop-filter:blur(20px);border:1px solid var(--rim2);border-radius:var(--rl);padding:1rem 1.2rem;max-width:310px;min-width:230px;box-shadow:0 24px 60px rgba(0,0,0,.7);z-index:3000;transform:translateX(380px);transition:transform .4s var(--sp)}
+.toast.show{transform:translateX(0)}
+.toast.good{border-color:rgba(178,255,89,.35)}
+.toast.bad{border-color:rgba(255,77,109,.35)}
+.t-hd{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem}
+.t-ico{font-size:1.1rem}.t-ttl{font-weight:700;font-size:.9rem;color:var(--t1)}
+.t-body{font-size:.78rem;color:var(--t2);line-height:1.5;margin-bottom:.5rem}
+.t-tags{display:flex;flex-wrap:wrap;gap:.3rem}
+.ttag{font-family:var(--fm);font-size:.63rem;padding:.18rem .55rem;border-radius:5px;font-weight:700}
+.ttag.up{color:var(--l);background:rgba(178,255,89,.12);border:1px solid rgba(178,255,89,.2)}
+.ttag.dn{color:var(--r);background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.2)}
+.fnum{position:fixed;pointer-events:none;z-index:9000;font-family:var(--fm);font-size:1.1rem;font-weight:700;animation:faway 1.5s var(--eo) forwards}
+@keyframes faway{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.75)}}
+.fnum.up{color:var(--l);text-shadow:0 0 14px var(--l)}
+.fnum.dn{color:var(--r);text-shadow:0 0 14px var(--r)}
+.particle{position:fixed;pointer-events:none;z-index:8999;border-radius:50%;animation:pfloat 1.2s ease-out forwards}
+@keyframes pfloat{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}}
+
+/* ════ END SCREEN ════ */
+#end-screen{min-height:100vh;flex-direction:column;align-items:center;padding:clamp(2rem,4vw,3rem) 1rem;gap:1.2rem;overflow:hidden}
+.end-wrap{position:relative;z-index:2;width:100%;max-width:900px;display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.e-trophy{font-size:5.5rem;animation:trophyin .9s var(--sp);filter:drop-shadow(0 0 50px gold)}
+@keyframes trophyin{from{opacity:0;transform:scale(.15) rotate(-25deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.e-eyebrow{font-family:var(--fm);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--t3)}
+.e-title{font-family:var(--fd);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.03em;text-align:center;color:var(--t1);animation:fadeup .6s var(--eo) both}
+.e-badge{font-family:var(--fm);font-size:.78rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:.5rem 2.2rem;border-radius:100px;border:2px solid currentColor;animation:fadeup .6s .1s var(--eo) both}
+.e-badge.gold{color:#ffd700;box-shadow:0 0 30px rgba(255,215,0,.35)}
+.e-badge.silver{color:#d0d8e8;box-shadow:0 0 20px rgba(200,210,230,.2)}
+.e-badge.bronze{color:#e8a060;box-shadow:0 0 20px rgba(232,160,96,.2)}
+.e-badge.crit{color:var(--r);box-shadow:0 0 20px var(--rg)}
+.e-msg{font-size:.95rem;color:var(--t2);text-align:center;max-width:500px;line-height:1.75;animation:fadeup .6s .15s var(--eo) both}
+.e-profile-used{font-family:var(--fm);font-size:.65rem;color:var(--t3);letter-spacing:.1em;animation:fadeup .6s .2s var(--eo) both}
+.score-big{font-family:var(--fd);font-size:clamp(2.5rem,7vw,5rem);font-weight:800;color:var(--a);filter:drop-shadow(0 0 30px var(--ag));animation:fadeup .6s .25s var(--eo) both;text-align:center}
+.score-lbl{font-family:var(--fm);font-size:.65rem;color:var(--t3);letter-spacing:.2em;text-transform:uppercase;margin-top:-.5rem;animation:fadeup .6s .3s var(--eo) both}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.65rem;width:100%}
+.rcard{background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rl);padding:1rem;text-align:center;position:relative;overflow:hidden;animation:fadeup .5s var(--eo) both;transition:transform .25s var(--sp),border-color .25s}
+.rcard:hover{transform:translateY(-3px);border-color:var(--rim3)}
+.rcard:nth-child(1){animation-delay:.1s}.rcard:nth-child(2){animation-delay:.18s}.rcard:nth-child(3){animation-delay:.26s}.rcard:nth-child(4){animation-delay:.34s}.rcard:nth-child(5){animation-delay:.42s}
+.rcard-glow{position:absolute;bottom:-20px;right:-20px;width:70px;height:70px;border-radius:50%;filter:blur(30px);opacity:.3}
+.rcard-ico{font-size:1.6rem;margin-bottom:.45rem;display:block}
+.rcard-val{font-family:var(--fm);font-size:1.35rem;font-weight:700;display:block;margin-bottom:.2rem}
+.rcard-lbl{font-size:.62rem;color:var(--t3);letter-spacing:.12em;text-transform:uppercase}
+.effcard{width:100%;background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rl);padding:1.1rem;animation:fadeup .5s .5s var(--eo) both}
+.eff-hd{font-family:var(--fm);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);display:flex;justify-content:space-between;margin-bottom:.8rem;align-items:center}
+.eff-hd span:last-child{font-size:.85rem;font-weight:700;color:var(--t1)}
+.eff-track{height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;position:relative;margin-bottom:.45rem}
+.eff-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--r) 0%,var(--a) 45%,var(--l) 90%);transition:width 1.8s var(--eo);position:relative}
+.eff-fill::after{content:'';position:absolute;right:0;top:0;width:3px;height:100%;background:#fff;border-radius:2px;box-shadow:0 0 8px #fff}
+.eff-ticks{display:flex;justify-content:space-between;font-size:.56rem;color:var(--t3);font-family:var(--fm)}
+.end-btns{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;animation:fadeup .5s .7s var(--eo) both}
+.btn-restart{font-family:var(--fm);font-size:.76rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.9rem 2.4rem;border:none;border-radius:100px;background:linear-gradient(135deg,var(--c),var(--l));color:#060a10;cursor:pointer;transition:transform .3s var(--sp),box-shadow .3s;box-shadow:0 0 30px rgba(0,229,255,.25)}
+.btn-restart:hover{transform:translateY(-4px);box-shadow:0 10px 40px rgba(0,229,255,.45)}
+.btn-ranking{font-family:var(--fm);font-size:.76rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.9rem 2.4rem;border:1px solid var(--rim2);border-radius:100px;background:transparent;color:var(--t2);cursor:pointer;transition:all .3s}
+.btn-ranking:hover{border-color:var(--rim3);color:var(--t1);transform:translateY(-3px)}
+.educard{background:var(--s2);border:1px solid var(--rim2);border-radius:var(--rl);padding:1.1rem;font-size:.8rem;color:var(--t2);line-height:1.75;animation:fadeup .5s .6s var(--eo) both;max-width:700px}
+.educard strong{color:var(--t1)}.edu-tag{color:var(--c);font-weight:600}
+
+/* ════ RANKING SCREEN ════ */
+#ranking-screen{min-height:100vh;flex-direction:column;align-items:center;padding:clamp(2rem,4vw,3rem) 1rem;gap:1.2rem;overflow:hidden}
+.rank-wrap{position:relative;z-index:2;width:100%;max-width:700px;display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.rank-title{font-family:var(--fd);font-size:clamp(1.8rem,5vw,3rem);font-weight:800;letter-spacing:-.02em;text-align:center;background:linear-gradient(135deg,var(--a),var(--o));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:fadeup .6s var(--eo) both}
+.rank-sub{font-family:var(--fm);font-size:.65rem;color:var(--t3);letter-spacing:.2em;text-transform:uppercase;animation:fadeup .6s .1s var(--eo) both}
+.rank-table{width:100%;background:var(--s1);border:1px solid var(--rim2);border-radius:var(--rxl);overflow:hidden;animation:fadeup .6s .2s var(--eo) both}
+.rank-header{display:grid;grid-template-columns:44px 1fr 80px 90px 80px;gap:.5rem;padding:.65rem 1rem;background:var(--s2);border-bottom:1px solid var(--rim2);font-family:var(--fm);font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:var(--t3)}
+.rank-row{display:grid;grid-template-columns:44px 1fr 80px 90px 80px;gap:.5rem;padding:.75rem 1rem;border-bottom:1px solid var(--rim);align-items:center;transition:background .2s;animation:fadeup .4s var(--eo) both}
+.rank-row:last-child{border-bottom:none}
+.rank-row:hover{background:rgba(255,255,255,.03)}
+.rank-row.me{background:rgba(0,229,255,.06);border-left:2px solid var(--c)}
+.rank-pos{font-family:var(--fm);font-size:.9rem;font-weight:700;text-align:center}
+.rank-pos.p1{color:#ffd700}.rank-pos.p2{color:#d0d8e8}.rank-pos.p3{color:#e8a060}
+.rank-name{font-weight:600;font-size:.88rem;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-profile{font-size:.7rem;color:var(--t3)}
+.rank-score{font-family:var(--fm);font-size:.95rem;font-weight:700;color:var(--a);text-align:right}
+.rank-badge{font-family:var(--fm);font-size:.55rem;font-weight:700;padding:.18rem .5rem;border-radius:100px;border:1px solid currentColor;text-align:center;white-space:nowrap}
+.rank-badge.gold{color:#ffd700}.rank-badge.silver{color:#d0d8e8}.rank-badge.bronze{color:#e8a060}.rank-badge.crit{color:var(--r)}
+.rank-date{font-family:var(--fm);font-size:.6rem;color:var(--t3);text-align:right}
+.rank-empty{padding:2.5rem;text-align:center;color:var(--t3);font-size:.9rem}
+.rank-loading{padding:2rem;text-align:center;color:var(--t3);font-size:.85rem;display:flex;align-items:center;justify-content:center;gap:.6rem}
+.rank-spinner{width:16px;height:16px;border:2px solid var(--rim2);border-top-color:var(--c);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-back{font-family:var(--fm);font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:.75rem 2rem;border:1px solid var(--rim2);border-radius:100px;background:transparent;color:var(--t2);cursor:pointer;transition:all .2s}
+.btn-back:hover{border-color:var(--rim3);color:var(--t1);transform:translateY(-2px)}
+.rank-saved-msg{font-family:var(--fm);font-size:.68rem;color:var(--l);letter-spacing:.1em;display:flex;align-items:center;gap:.5rem;animation:fadeup .4s var(--eo) both}
+.rank-saved-msg::before{content:'✓';font-size:.8rem}
+</style>
+</head>
+<body>
+
+<!-- ════ INTRO ════ -->
+<div id="intro-screen" class="screen active">
+  <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+  <div class="intro-wrap">
+    <div class="i-badge"><span class="i-badge-dot"></span>SIMULADOR PROFISSIONAL · SENAI VAREJO</div>
+    <div class="i-logo"><span class="osa">OSA</span><span class="sub">MANAGER</span></div>
+    <p class="i-tag">Gerencie um supermercado sob pressão durante 5 dias críticos. Resolva rupturas, combata estoque fantasma e leve sua loja ao topo do ranking.</p>
+    <div class="setup-box">
+      <div>
+        <div class="setup-lbl">Seu nome</div>
+        <input class="name-input" id="player-name" type="text" placeholder="Digite seu nome..." maxlength="24" autocomplete="off"/>
+      </div>
+      <div>
+        <div class="setup-lbl" style="margin-bottom:.6rem">Escolha seu perfil de gerente</div>
+        <div class="profile-grid" id="profile-grid">
+          <div class="pcard sel" data-profile="profit">
+            <span class="pcard-ico">📈</span>
+            <span class="pcard-name">Lucro</span>
+            <span class="pcard-desc">+20% ganhos financeiros nas decisões comerciais</span>
+          </div>
+          <div class="pcard" data-profile="clients">
+            <span class="pcard-ico">😊</span>
+            <span class="pcard-name">Clientes</span>
+            <span class="pcard-desc">+20% satisfação e menor impacto em rupturas</span>
+          </div>
+          <div class="pcard" data-profile="ops">
+            <span class="pcard-ico">📦</span>
+            <span class="pcard-name">Operação</span>
+            <span class="pcard-desc">-1 ruptura por evento negativo de reposição</span>
+          </div>
+          <div class="pcard" data-profile="tech">
+            <span class="pcard-ico">🤖</span>
+            <span class="pcard-name">Tecnologia</span>
+            <span class="pcard-desc">+25% efeito em eventos de ERP, RFID e IA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center">
+      <button class="i-start" id="btn-start"><span>▶ &nbsp;INICIAR OPERAÇÃO</span></button>
+      <button class="i-rank-btn" id="btn-view-rank">🏆 Ver Ranking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ GAME ════ -->
+<div id="game-screen" class="screen">
+  <div class="topbar">
+    <div class="tb-logo">OSA MANAGER</div>
+    <div class="live-chip"><span class="live-dot"></span>AO VIVO</div>
+    <div class="day-chip" id="day-badge">DIA 1 / 5</div>
+    <div class="diff-chip diff-easy" id="diff-chip">FÁCIL</div>
+    <div class="profile-chip" id="profile-chip">📈 LUCRO</div>
+    <div class="dtrack" id="dtrack"></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi kc"><div class="kpi-glow"></div><div class="kpi-top"><span class="kpi-lbl">On Shelf Avail.</span><span class="kpi-ico">📊</span></div><div class="kpi-val" id="m-osa">97.0%</div><div class="kpi-bar"><div class="kpi-fill" id="mb-osa" style="width:97%"></div></div></div>
+    <div class="kpi kl"><div class="kpi-glow"></div><div class="kpi-top"><span class="kpi-lbl">Lucro</span><span class="kpi-ico">💰</span></div><div class="kpi-val" id="m-profit">R$0</div><div class="kpi-bar"><div class="kpi-fill" id="mb-profit" style="width:50%"></div></div></div>
+    <div class="kpi kv"><div class="kpi-glow"></div><div class="kpi-top"><span class="kpi-lbl">Satisfação</span><span class="kpi-ico">😊</span></div><div class="kpi-val" id="m-sat">95%</div><div class="kpi-bar"><div class="kpi-fill" id="mb-sat" style="width:95%"></div></div></div>
+    <div class="kpi kr"><div class="kpi-glow"></div><div class="kpi-top"><span class="kpi-lbl">Rupturas</span><span class="kpi-ico">⚠️</span></div><div class="kpi-val" id="m-rupt">0</div><div class="kpi-bar"><div class="kpi-fill" id="mb-rupt" style="width:0%"></div></div></div>
+    <div class="kpi ka"><div class="kpi-glow"></div><div class="kpi-top"><span class="kpi-lbl">Pontuação</span><span class="kpi-ico">⭐</span></div><div class="kpi-val" id="m-score">0</div><div class="kpi-bar"><div class="kpi-fill" id="mb-score" style="width:0%"></div></div></div>
+  </div>
+  <div class="gbody">
+    <div class="evpanel">
+      <div class="ep-hd">
+        <div class="ep-lbl"><span class="ep-dot"></span>Central de Eventos</div>
+        <div class="ep-info" id="ep-info">AGUARDANDO TURNO</div>
+      </div>
+      <div id="ev-container"></div>
+      <div class="logbox">
+        <div class="log-hd">Log Operacional</div>
+        <div class="loglist" id="loglist"></div>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="scard">
+        <div class="sc-ttl"><span class="sc-ttl-dot" style="background:var(--c);box-shadow:0 0 6px var(--c)"></span>Monitor OSA</div>
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 160 100">
+            <path class="g-bg" d="M16 92 A62 62 0 0 1 144 92"/>
+            <path class="g-track" id="gtrack" d="M16 92 A62 62 0 0 1 144 92" stroke="var(--c)" stroke-dasharray="194.8" stroke-dashoffset="0"/>
+            <text class="g-num" id="gnum" x="80" y="76">97%</text>
+            <text class="g-unit" x="80" y="92">ON SHELF AVAILABILITY</text>
+          </svg>
+          <div class="g-status" id="gstatus"><span>✅</span><span>Disponibilidade saudável</span></div>
+        </div>
+        <div class="tiers">
+          <div class="tier" data-tier="gold"><div class="tier-dot" style="background:#ffd700"></div><span class="tier-name">🏆 Loja Ouro</span><span class="tier-val">≥ 98%</span></div>
+          <div class="tier active" data-tier="silver"><div class="tier-dot" style="background:#b8cce0"></div><span class="tier-name">🥈 Loja Prata</span><span class="tier-val">95–97%</span></div>
+          <div class="tier" data-tier="bronze"><div class="tier-dot" style="background:#e8a060"></div><span class="tier-name">🥉 Loja Bronze</span><span class="tier-val">90–94%</span></div>
+          <div class="tier" data-tier="crit"><div class="tier-dot" style="background:var(--r)"></div><span class="tier-name">❌ Crítico</span><span class="tier-val">&lt; 90%</span></div>
+        </div>
+      </div>
+      <div class="scard">
+        <div class="mg-ttl">🎮 Minigame · Reposição de Prateleira</div>
+        <div class="mg-stats">
+          <div class="mg-stat"><span class="mg-sv" id="ms-pts" style="color:var(--a)">0</span><span class="mg-sl">Pontos</span></div>
+          <div class="mg-stat"><span class="mg-sv" id="ms-combo" style="color:var(--v)">x1</span><span class="mg-sl">Combo</span></div>
+          <div class="mg-stat"><span class="mg-sv" id="ms-time" style="color:var(--c)">30s</span><span class="mg-sl">Tempo</span></div>
+        </div>
+        <div class="mg-timer"><div class="mg-tfill" id="ms-tbar" style="width:100%"></div><div class="mg-timer-num" id="ms-tnum">30s</div></div>
+        <div class="mg-depot" id="mini-depot"><span class="mg-dlbl">Depósito — arraste para a prateleira correta</span></div>
+        <div class="shelves" id="shelves"></div>
+        <div class="mg-btns">
+          <button class="mg-btn pri" id="mini-btn">▶ INICIAR</button>
+          <button class="mg-btn sec" id="mini-reset">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ END ════ -->
+<div id="end-screen" class="screen">
+  <div class="orb orb1"></div><div class="orb orb2"></div>
+  <div class="end-wrap">
+    <div class="e-trophy" id="e-trophy">🏆</div>
+    <div class="e-eyebrow">RELATÓRIO FINAL — 5 DIAS DE OPERAÇÃO</div>
+    <div class="e-title" id="e-title">Simulação Concluída</div>
+    <div class="e-badge gold" id="e-badge">LOJA OURO</div>
+    <div class="e-msg" id="e-msg"></div>
+    <div class="e-profile-used" id="e-profile-used"></div>
+    <div class="score-big" id="score-big">0</div>
+    <div class="score-lbl">PONTUAÇÃO FINAL</div>
+    <div class="rgrid" id="rgrid"></div>
+    <div class="effcard">
+      <div class="eff-hd"><span>Índice de Eficiência Operacional</span><span id="effpct">—</span></div>
+      <div class="eff-track"><div class="eff-fill" id="effseg" style="width:0%"></div></div>
+      <div class="eff-ticks"><span>0%</span><span>Crítico &lt;90</span><span>Prata 95</span><span>Ouro 98%</span></div>
+    </div>
+    <div class="educard">
+      <strong>On Shelf Availability (OSA)</strong> mede se o produto certo está disponível, no local certo, quando o cliente procura. OSA abaixo de 95% representa perda direta de receita e deterioração da experiência de compra.<br><br>
+      Tecnologias como <span class="edu-tag">RFID</span>, <span class="edu-tag">sensores IoT</span>, <span class="edu-tag">ERP integrado</span> e <span class="edu-tag">IA preditiva</span> são pilares do varejo moderno para combater rupturas e estoque fantasma.
+    </div>
+    <div class="end-btns">
+      <button class="btn-restart" id="btn-restart">↺ &nbsp;NOVA OPERAÇÃO</button>
+      <button class="btn-ranking" id="btn-see-rank">🏆 &nbsp;Ver Ranking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ RANKING ════ -->
+<div id="ranking-screen" class="screen">
+  <div class="orb orb1"></div><div class="orb orb2"></div>
+  <div class="rank-wrap">
+    <div class="rank-title">🏆 Ranking da Turma</div>
+    <div class="rank-sub">Top 20 melhores pontuações</div>
+    <div id="rank-saved-banner" style="display:none">
+      <div class="rank-saved-msg">Sua pontuação foi salva com sucesso!</div>
+    </div>
+    <div class="rank-table">
+      <div class="rank-header">
+        <div>#</div><div>Jogador</div><div>Perfil</div><div style="text-align:right">Pontos</div><div style="text-align:right">Classe</div>
+      </div>
+      <div id="rank-body">
+        <div class="rank-loading"><div class="rank-spinner"></div>Carregando...</div>
+      </div>
+    </div>
+    <button class="btn-back" id="btn-back">← Voltar</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="t-hd"><span class="t-ico" id="t-ico"></span><span class="t-ttl" id="t-ttl"></span></div>
+  <div class="t-body" id="t-body"></div>
+  <div class="t-tags" id="t-tags"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════
+   FIREBASE CONFIG
+════════════════════════════════════ */
+const FB_CONFIG = {
+  apiKey:"AIzaSyDf0cxvwHkkEXpw6qsh7FmXs8QO3oOinG4",
+  authDomain:"ranking-93afb.firebaseapp.com",
+  databaseURL:"https://ranking-93afb-default-rtdb.firebaseio.com",
+  projectId:"ranking-93afb",
+  storageBucket:"ranking-93afb.firebasestorage.app",
+  messagingSenderId:"1029030180943",
+  appId:"1:1029030180943:web:64b63ea98bc160366d923a"
+};
+firebase.initializeApp(FB_CONFIG);
+const DB = firebase.database();
+
+/* ════════════════════════════════════
+   PROFILES
+════════════════════════════════════ */
+const PROFILES = {
+  profit:  { icon:'📈', name:'Lucro',      bonus:'pr', mult:1.2 },
+  clients: { icon:'😊', name:'Clientes',   bonus:'cl', mult:1.2 },
+  ops:     { icon:'📦', name:'Operação',   bonus:'ru', mult:0   },
+  tech:    { icon:'🤖', name:'Tecnologia', bonus:'tech',mult:1.25 },
+};
+const TECH_EVENTS = ['e7','e8','e9','e12','e22','e27','e28'];
+
+/* ════════════════════════════════════
+   30 EVENTS (difficulty: 1=easy,2=mid,3=hard,4=crisis)
+════════════════════════════════════ */
+const ALL_EVENTS = [
+  /* ── EASY ── */
+  {id:'e1',diff:1,cat:'Demanda Inesperada',icon:'📈',color:'var(--a)',
+   title:'Promoção viral de refrigerantes!',
+   desc:'Um influenciador postou sobre sua loja. Demanda por refrigerantes triplicou. Prateleiras se esvaziando.',
+   imp:[{t:'i',l:'⬇ OSA sem ação'},{t:'i',l:'⬇ Lucro perdido'}],
+   ch:[{i:'🚀',n:'Reposição Imediata',s:'Acionar equipe emergencial',fx:{osa:3,pr:2800,cl:5,ru:0,sc:120},r:'Reposição concluída! OSA mantida.',g:true},
+       {i:'⏳',n:'Aguardar Turno',s:'Manter plano atual',fx:{osa:-6,pr:-2500,cl:-8,ru:2,sc:-60},r:'Ruptura confirmada! Clientes insatisfeitos.',g:false}]},
+  {id:'e2',diff:1,cat:'Estoque Fantasma',icon:'👻',color:'var(--v)',
+   title:'Sistema indica estoque, prateleira está vazia',
+   desc:'ERP mostra 45 unidades de óleo disponíveis, mas a prateleira está completamente vazia.',
+   imp:[{t:'w',l:'⚠ Dados incorretos'},{t:'i',l:'⬇ Satisfação'}],
+   ch:[{i:'📡',n:'Investigar com RFID',s:'Auditoria imediata',fx:{osa:5,pr:-800,cl:8,ru:-1,sc:150},r:'Produto localizado no corredor errado. Corrigido!',g:true},
+       {i:'🙈',n:'Ignorar por agora',s:'Priorizar outros setores',fx:{osa:-5,pr:-1800,cl:-10,ru:2,sc:-80},r:'Divergência persistiu. Mais rupturas geradas.',g:false}]},
+  {id:'e3',diff:1,cat:'Falha Humana',icon:'🧑‍💼',color:'var(--a)',
+   title:'Produto alocado na prateleira errada',
+   desc:'Repositor novato colocou cereais no corredor de biscoitos. Clientes não encontram.',
+   imp:[{t:'w',l:'⚠ Localização errada'},{t:'i',l:'⬇ Experiência'}],
+   ch:[{i:'📚',n:'Realocar + Treinar',s:'Corrigir e capacitar',fx:{osa:4,pr:1500,cl:9,ru:0,sc:130},r:'Realocado e equipe treinada. Reincidência reduzida!',g:true},
+       {i:'📦',n:'Só Realocar',s:'Resolver o imediato',fx:{osa:1,pr:400,cl:3,ru:0,sc:40},r:'Corrigido, mas sem treinamento. Pode voltar a acontecer.',g:false}]},
+  {id:'e4',diff:1,cat:'Reposição',icon:'📋',color:'var(--l)',
+   title:'Checklist de reposição não foi seguido',
+   desc:'Funcionário pulou etapas do checklist matinal. 5 produtos sem reposição.',
+   imp:[{t:'i',l:'⬇ OSA matinal'},{t:'w',l:'⚠ Processo ignorado'}],
+   ch:[{i:'✅',n:'Reposição Imediata',s:'Corrigir agora',fx:{osa:3,pr:1200,cl:4,ru:0,sc:90},r:'Reposição feita. Processo normalizado.',g:true},
+       {i:'📝',n:'Registrar e Seguir',s:'Deixar para o próximo turno',fx:{osa:-3,pr:-1200,cl:-5,ru:1,sc:-40},r:'Produtos ficaram sem estoque até o próximo turno.',g:false}]},
+  {id:'e5',diff:1,cat:'Logística',icon:'🚛',color:'var(--r)',
+   title:'Entrega do fornecedor chegou incompleta',
+   desc:'Pedido de bebidas chegou com apenas 60% dos itens. Nota fiscal aprovada incorretamente.',
+   imp:[{t:'i',l:'⬇ Estoque bebidas'},{t:'w',l:'⚠ Erro fiscal'}],
+   ch:[{i:'📞',n:'Contatar Fornecedor',s:'Exigir complemento urgente',fx:{osa:2,pr:-400,cl:3,ru:0,sc:80},r:'Complemento chegou no mesmo dia. Estoque normalizado.',g:true},
+       {i:'🗂️',n:'Aceitar Parcial',s:'Trabalhar com o que tem',fx:{osa:-3,pr:-900,cl:-4,ru:1,sc:-35},r:'Ruptura de bebidas no turno da tarde.',g:false}]},
+  {id:'e6',diff:1,cat:'Cliente',icon:'🛒',color:'var(--c)',
+   title:'Pico inesperado de clientes na segunda-feira',
+   desc:'Segunda-feira com fluxo 40% acima do previsto. Corredores de snacks e higiene sob pressão.',
+   imp:[{t:'i',l:'⬇ OSA snacks'},{t:'i',l:'⬇ OSA higiene'}],
+   ch:[{i:'🏃',n:'Reposição Acelerada',s:'Reforçar equipe',fx:{osa:3,pr:2200,cl:7,ru:0,sc:100},r:'Equipe reforçada. Prateleiras mantidas cheias.',g:true},
+       {i:'😐',n:'Operação Normal',s:'Manter ritmo',fx:{osa:-4,pr:-1600,cl:-7,ru:2,sc:-55},r:'Rupturas em snacks e higiene. Clientes frustrados.',g:false}]},
+  {id:'e7',diff:1,cat:'RFID / IoT',icon:'📡',color:'var(--l)',
+   title:'Sensor RFID detectou produto vencendo em 24h',
+   desc:'60 unidades de frios próximas ao vencimento precisam ser vendidas urgentemente.',
+   imp:[{t:'p',l:'⬆ Prevenção de perdas'},{t:'w',l:'⚠ Risco de descarte'}],
+   ch:[{i:'🏷️',n:'Promoção Flash',s:'50% de desconto urgente',fx:{osa:2,pr:1800,cl:6,ru:0,sc:160},r:'Estoque esgotado em 2h! Zero desperdício.',g:true},
+       {i:'🗑️',n:'Descartar',s:'Seguir protocolo padrão',fx:{osa:-1,pr:-900,cl:0,ru:1,sc:-30},r:'Perda financeira evitável.',g:false}]},
+  {id:'e8',diff:1,cat:'Comunicação',icon:'📵',color:'var(--v)',
+   title:'Depósito e loja sem sincronização',
+   desc:'Sistema falhou. 8 produtos com estoque no depósito não chegaram à prateleira.',
+   imp:[{t:'i',l:'⬇ Disponibilidade'},{t:'w',l:'⚠ ERP desatualizado'}],
+   ch:[{i:'📋',n:'Checklist Manual',s:'Processo físico urgente',fx:{osa:3,pr:2000,cl:5,ru:0,sc:110},r:'8 produtos transferidos para a prateleira com sucesso.',g:true},
+       {i:'💻',n:'Aguardar TI',s:'Esperar sistema restaurar',fx:{osa:-6,pr:-2600,cl:-10,ru:3,sc:-80},r:'Sistema levou 5h. Rupturas acumuladas.',g:false}]},
+  /* ── MID ── */
+  {id:'e9',diff:2,cat:'Inteligência Artificial',icon:'🤖',color:'var(--c)',
+   title:'IA prevê pico de demanda no fim de semana',
+   desc:'Sistema de IA identificou aumento de 40% na demanda de churrasco baseado em clima e histórico.',
+   imp:[{t:'p',l:'⬆ Oportunidade'},{t:'p',l:'⬆ OSA preventiva'}],
+   ch:[{i:'📊',n:'Pedido Antecipado',s:'Acatar previsão da IA',fx:{osa:5,pr:5500,cl:8,ru:0,sc:200},r:'Decisão certeira! Vendas 42% acima do previsto.',g:true},
+       {i:'🤷',n:'Manter Estoque',s:'Não confiar na IA',fx:{osa:-4,pr:-2000,cl:-6,ru:2,sc:-60},r:'Ruptura de carvão e linguiça no sábado. IA estava certa.',g:false}]},
+  {id:'e10',diff:2,cat:'Demanda Sazonal',icon:'🎉',color:'var(--r)',
+   title:'Feriado não mapeado causa pico inesperado',
+   desc:'Feriado regional fora do planejamento. Fluxo 3× acima do normal. Bebidas e snacks em risco.',
+   imp:[{t:'i',l:'⬇ Previsão demanda'},{t:'i',l:'⬇ OSA múltiplas linhas'}],
+   ch:[{i:'🚨',n:'Ativar Plano de Crise',s:'Protocolo emergência',fx:{osa:4,pr:4500,cl:10,ru:0,sc:180},r:'Equipe extra + reposição acelerada. Sucesso!',g:true},
+       {i:'😐',n:'Operar Normalmente',s:'Sem mudança de plano',fx:{osa:-8,pr:-4000,cl:-14,ru:4,sc:-110},r:'5 categorias em ruptura. Pior turno da semana.',g:false}]},
+  {id:'e11',diff:2,cat:'Auditoria ERP',icon:'💾',color:'var(--a)',
+   title:'Divergência crítica de inventário detectada',
+   desc:'ERP aponta diferença de 180 unidades entre físico e sistema. Suspeita de erro em cadastro.',
+   imp:[{t:'i',l:'⬇ Confiabilidade'},{t:'i',l:'⬇ Decisões incorretas'}],
+   ch:[{i:'🔍',n:'Inventário Imediato',s:'Contagem física urgente',fx:{osa:4,pr:-600,cl:3,ru:-2,sc:120},r:'Erro de migração encontrado. Sistema recalibrado!',g:true},
+       {i:'🖥️',n:'Ajuste no Sistema',s:'Corrigir só o dado',fx:{osa:-2,pr:-1200,cl:-4,ru:2,sc:-50},r:'Sem validação física. Problema persiste.',g:false}]},
+  {id:'e12',diff:2,cat:'Atraso Logístico',icon:'🚛',color:'var(--r)',
+   title:'Fornecedor principal atrasou 18 horas',
+   desc:'Caminhão de laticínios retido na BR-101. Iogurtes, queijos e manteigas em estoque crítico.',
+   imp:[{t:'i',l:'⬇ OSA laticínios'},{t:'i',l:'⬇ Lucro do turno'}],
+   ch:[{i:'🔄',n:'Fornecedor Alternativo',s:'Custo maior, entrega rápida',fx:{osa:3,pr:-1200,cl:6,ru:0,sc:120},r:'Alternativo acionado! Laticínios normalizados.',g:true},
+       {i:'⏰',n:'Aguardar Entrega',s:'Manter contrato original',fx:{osa:-5,pr:-2800,cl:-8,ru:2,sc:-70},r:'Laticínios em ruptura por 6h.',g:false}]},
+  {id:'e13',diff:2,cat:'Falha de Reposição',icon:'⚠️',color:'var(--r)',
+   title:'Turno noturno não executou reposição',
+   desc:'Equipe da madrugada não repôs 12 categorias. Loja abre com prateleiras semi-vazias.',
+   imp:[{t:'i',l:'⬇ OSA múltiplas cat.'},{t:'i',l:'⬇ Lucro da manhã'}],
+   ch:[{i:'🏃',n:'Reposição Emergencial',s:'Toda equipe mobilizada',fx:{osa:6,pr:3200,cl:7,ru:-1,sc:150},r:'Emergência concluída em 40min!',g:true},
+       {i:'🐢',n:'Repor Gradualmente',s:'Manter ritmo normal',fx:{osa:-5,pr:-2200,cl:-10,ru:3,sc:-80},r:'4h de ruptura em múltiplas categorias.',g:false}]},
+  {id:'e14',diff:2,cat:'Concorrência',icon:'🏪',color:'var(--o)',
+   title:'Concorrente lança promoção agressiva',
+   desc:'Supermercado vizinho anunciou 30% off em hortifruti. Clientes migrando.',
+   imp:[{t:'i',l:'⬇ Fluxo de clientes'},{t:'w',l:'⚠ Competitividade'}],
+   ch:[{i:'🥊',n:'Contrapromoção',s:'Igualar desconto + OSA perfeita',fx:{osa:2,pr:-800,cl:8,ru:0,sc:130},r:'Clientes mantidos! Diferencial na disponibilidade.',g:true},
+       {i:'🛡️',n:'Manter Preços',s:'Focar em qualidade',fx:{osa:0,pr:-1500,cl:-6,ru:0,sc:30},r:'Perda temporária de fluxo. Recuperação parcial.',g:false}]},
+  {id:'e15',diff:2,cat:'Treinamento',icon:'🎓',color:'var(--l)',
+   title:'Oportunidade de treinamento em OSA',
+   desc:'Consultoria oferece workshop de 4h em boas práticas de reposição. Custo: R$2.000.',
+   imp:[{t:'p',l:'⬆ Capacitação equipe'},{t:'w',l:'⚠ Custo imediato'}],
+   ch:[{i:'📚',n:'Contratar Workshop',s:'Investir na equipe',fx:{osa:4,pr:-2000,cl:5,ru:-2,sc:160},r:'Equipe capacitada. OSA melhora nos próximos dias!',g:true},
+       {i:'💸',n:'Economizar',s:'Treinamento interno',fx:{osa:1,pr:0,cl:1,ru:0,sc:40},r:'Treinamento básico aplicado. Melhoria modesta.',g:false}]},
+  {id:'e16',diff:2,cat:'Tecnologia',icon:'💻',color:'var(--c)',
+   title:'ERP apresenta instabilidade no módulo de estoque',
+   desc:'Módulo de controle de estoque travando. Reposições manuais necessárias.',
+   imp:[{t:'i',l:'⬇ Eficiência operacional'},{t:'w',l:'⚠ Dados desatualizados'}],
+   ch:[{i:'🔧',n:'Chamar Suporte TI',s:'Resolver urgente',fx:{osa:3,pr:-500,cl:2,ru:0,sc:100},r:'TI resolveu em 2h. Módulo restaurado.',g:true},
+       {i:'📋',n:'Planilha Manual',s:'Controle paralelo',fx:{osa:-2,pr:-800,cl:-3,ru:1,sc:-30},r:'Erros manuais geraram 1 ruptura não detectada.',g:false}]},
+  /* ── HARD ── */
+  {id:'e17',diff:3,cat:'Crise de Fornecimento',icon:'⛔',color:'var(--r)',
+   title:'Três fornecedores atrasaram simultaneamente',
+   desc:'Falha na distribuidora regional: bebidas, laticínios e higiene sem entrega por 24h.',
+   imp:[{t:'i',l:'⬇ OSA 3 seções'},{t:'i',l:'⬇ Lucro severo'}],
+   ch:[{i:'🆘',n:'Emergência Total',s:'Acionar rede de fornecedores',fx:{osa:3,pr:-3000,cl:5,ru:1,sc:160},r:'Alternativas acionadas. Prejuízo minimizado.',g:true},
+       {i:'⏳',n:'Aguardar Resolução',s:'Esperar distribuidora',fx:{osa:-10,pr:-6000,cl:-16,ru:5,sc:-150},r:'3 seções em ruptura por 12h. Impacto grave.',g:false}]},
+  {id:'e18',diff:3,cat:'Recall de Produto',icon:'🚨',color:'var(--r)',
+   title:'Alerta sanitário: recall de lote de embutidos',
+   desc:'ANVISA emitiu alerta. Lote inteiro de embutidos precisa ser retirado imediatamente.',
+   imp:[{t:'i',l:'⬇ Estoque embutidos'},{t:'w',l:'⚠ Risco sanitário'}],
+   ch:[{i:'✅',n:'Retirada Imediata',s:'Cumprir protocolo ANVISA',fx:{osa:-2,pr:-2500,cl:8,ru:1,sc:150},r:'Produto retirado. Confiança do cliente preservada!',g:true},
+       {i:'🔇',n:'Aguardar Confirmação',s:'Verificar antes de agir',fx:{osa:-2,pr:-5000,cl:-18,ru:1,sc:-120},r:'Produto vendido. Autuação sanitária. Reputação comprometida.',g:false}]},
+  {id:'e19',diff:3,cat:'Demanda Extrema',icon:'📈',color:'var(--a)',
+   title:'Evento local dobra o fluxo da loja',
+   desc:'Jogo do campeonato regional traz 2× o fluxo normal. Bebidas e salgadinhos esgotando em tempo real.',
+   imp:[{t:'i',l:'⬇ OSA bebidas'},{t:'p',l:'⬆ Oportunidade lucro'}],
+   ch:[{i:'🔄',n:'Reposição Contínua',s:'Equipe dedicada nas prateleiras',fx:{osa:4,pr:6000,cl:9,ru:0,sc:190},r:'Prateleiras mantidas. Lucro recorde no turno!',g:true},
+       {i:'📊',n:'Priorizar Caixa',s:'Foco no atendimento',fx:{osa:-6,pr:1500,cl:-5,ru:3,sc:-40},r:'Rupturas frequentes. Clientes foram ao concorrente.',g:false}]},
+  {id:'e20',diff:3,cat:'Falha de Sistema',icon:'💥',color:'var(--r)',
+   title:'ERP offline por 6 horas',
+   desc:'Queda de energia derrubou o servidor do ERP. Inventário e reposição sem dados.',
+   imp:[{t:'i',l:'⬇ Visibilidade estoque'},{t:'i',l:'⬇ Decisões cegas'}],
+   ch:[{i:'📋',n:'Plano de Contingência',s:'Protocolo manual completo',fx:{osa:2,pr:-1500,cl:4,ru:1,sc:140},r:'Contingência bem executada. Impacto controlado.',g:true},
+       {i:'⏸️',n:'Reduzir Operação',s:'Aguardar sistema voltar',fx:{osa:-8,pr:-4500,cl:-12,ru:4,sc:-130},r:'Operação quase parada por 6h. Prejuízo elevado.',g:false}]},
+  {id:'e21',diff:3,cat:'Greve Logística',icon:'🚫',color:'var(--r)',
+   title:'Greve de transportadores afeta entregas',
+   desc:'Sindicato de transportadores entrou em greve. Entregas bloqueadas por 48h.',
+   imp:[{t:'i',l:'⬇ OSA toda loja'},{t:'i',l:'⬇ Reabastecimento'}],
+   ch:[{i:'✈️',n:'Frete Alternativo',s:'Custo 3× maior',fx:{osa:3,pr:-4000,cl:5,ru:1,sc:150},r:'Frete alternativo manteve estoque crítico.',g:true},
+       {i:'🔁',n:'Redistribuir Estoque',s:'Otimizar o que tem',fx:{osa:-4,pr:-2000,cl:-6,ru:2,sc:-60},r:'Redistribuição parcial. Várias rupturas.',g:false}]},
+  {id:'e22',diff:3,cat:'Inteligência Artificial',icon:'🤖',color:'var(--c)',
+   title:'IA detecta padrão de furto em tempo real',
+   desc:'Sistema identificou desvio de 200 unidades de produtos de alto valor nas últimas 48h.',
+   imp:[{t:'i',l:'⬇ Estoque real'},{t:'w',l:'⚠ Perda financeira'}],
+   ch:[{i:'📹',n:'Ação Imediata',s:'Segurança + auditoria',fx:{osa:3,pr:-1000,cl:2,ru:-2,sc:170},r:'Desvio contido. Sistema de prevenção reforçado.',g:true},
+       {i:'📝',n:'Registrar e Monitorar',s:'Aguardar mais evidências',fx:{osa:-2,pr:-3500,cl:-2,ru:1,sc:-70},r:'Furtos continuaram por mais 2 dias.',g:false}]},
+  {id:'e23',diff:3,cat:'Clima',icon:'⛈️',color:'var(--v)',
+   title:'Tempestade bloqueia acesso à loja por 3h',
+   desc:'Alagamento interdita rua principal. Fluxo cai 80% no período. Equipe reduzida.',
+   imp:[{t:'w',l:'⚠ Fluxo reduzido'},{t:'p',l:'⬆ Janela de reposição'}],
+   ch:[{i:'📦',n:'Reposição Completa',s:'Aproveitar baixo fluxo',fx:{osa:7,pr:-500,cl:5,ru:-2,sc:180},r:'Prateleiras 100% reabastecidas antes do fluxo retornar!',g:true},
+       {i:'☕',n:'Pausa Operacional',s:'Aguardar normalização',fx:{osa:1,pr:-1500,cl:0,ru:0,sc:30},r:'Oportunidade perdida. Reposição básica apenas.',g:false}]},
+  {id:'e24',diff:3,cat:'Fornecedor',icon:'🤝',color:'var(--l)',
+   title:'Fornecedor oferece exclusividade com desconto',
+   desc:'Fornecedor propõe contrato exclusivo com 15% de desconto, mas limita diversidade de marcas.',
+   imp:[{t:'p',l:'⬆ Redução de custo'},{t:'w',l:'⚠ Risco concentração'}],
+   ch:[{i:'✍️',n:'Aceitar Contrato',s:'Priorizar economia',fx:{osa:-1,pr:4000,cl:-3,ru:1,sc:100},r:'Economia aprovada, mas menor variedade gerou reclamações.',g:false},
+       {i:'🔀',n:'Manter Diversificação',s:'Preservar mix de fornecedores',fx:{osa:2,pr:-500,cl:4,ru:0,sc:140},r:'Mix diversificado mantido. Clientes satisfeitos.',g:true}]},
+  /* ── CRISIS (day 5 only) ── */
+  {id:'e25',diff:4,cat:'🚨 CRISE OPERACIONAL',icon:'🔥',color:'var(--r)',
+   title:'CRISE: Colapso de múltiplos sistemas simultâneo',
+   desc:'ERP offline, fornecedor principal em falência e dois repositores afastados. Situação caótica. Toda a operação depende das próximas decisões.',
+   imp:[{t:'i',l:'⬇ OSA crítico'},{t:'i',l:'⬇ Lucro severo'},{t:'i',l:'⬇ Equipe reduzida'}],
+   ch:[{i:'🆘',n:'Gestão de Crise Total',s:'Protocolo completo de emergência',fx:{osa:5,pr:-2000,cl:8,ru:-1,sc:280},r:'Crise gerenciada com excelência! Loja manteve operação.',g:true},
+       {i:'😰',n:'Priorizar o Básico',s:'Manter o mínimo funcionando',fx:{osa:-8,pr:-5000,cl:-15,ru:5,sc:-180},r:'Colapso parcial. Impacto grave em todos os indicadores.',g:false}]},
+  {id:'e26',diff:4,cat:'🚨 CRISE OPERACIONAL',icon:'💸',color:'var(--r)',
+   title:'CRISE: Auditoria surpresa + recall + pico de vendas',
+   desc:'Vigilância Sanitária fez auditoria surpresa, recall de 3 SKUs e sexta-feira com 4× o fluxo normal. Tudo ao mesmo tempo.',
+   imp:[{t:'i',l:'⬇ Conformidade legal'},{t:'i',l:'⬇ Reputação'},{t:'p',l:'⬆ Oportunidade vendas'}],
+   ch:[{i:'🏆',n:'Excelência Sob Pressão',s:'Gestão simultânea de todas as frentes',fx:{osa:4,pr:3000,cl:10,ru:0,sc:300},r:'Excelência operacional sob pressão extrema!',g:true},
+       {i:'🔀',n:'Triagem de Prioridades',s:'Resolver um por vez',fx:{osa:-5,pr:-2500,cl:-8,ru:3,sc:-100},r:'Alguns pontos controlados, outros colapsaram.',g:false}]},
+  {id:'e27',diff:4,cat:'🚨 CRISE OPERACIONAL',icon:'🤖',color:'var(--v)',
+   title:'CRISE: IA detecta ruptura em cascata em tempo real',
+   desc:'Sistema de IA alertou: 18 produtos entrarão em ruptura nas próximas 2 horas se nada for feito. Janela crítica de atuação.',
+   imp:[{t:'i',l:'⬇ OSA iminente'},{t:'p',l:'⬆ Janela de ação'}],
+   ch:[{i:'⚡',n:'Resposta Imediata à IA',s:'Executar plano de reposição da IA',fx:{osa:8,pr:4000,cl:10,ru:-2,sc:320},r:'IA + equipe em sincronia perfeita. OSA preservado!',g:true},
+       {i:'❓',n:'Validar Manualmente',s:'Checar cada produto antes',fx:{osa:-3,pr:-1000,cl:-4,ru:2,sc:-50},r:'Validação demorada. 6 rupturas não evitadas.',g:false}]},
+  {id:'e28',diff:4,cat:'🚨 CRISE OPERACIONAL',icon:'📉',color:'var(--r)',
+   title:'CRISE: Queda brusca de OSA detectada no pico de vendas',
+   desc:'OSA caiu 8% em 30 minutos durante pico de vendas. Clientes reclamando nas redes sociais.',
+   imp:[{t:'i',l:'⬇ Reputação online'},{t:'i',l:'⬇ OSA urgente'}],
+   ch:[{i:'📱',n:'Gestão de Crise Integrada',s:'Redes sociais + reposição simultânea',fx:{osa:7,pr:2000,cl:12,ru:-1,sc:290},r:'Crise revertida! Clientes elogiaram a rapidez.',g:true},
+       {i:'📦',n:'Foco Só em Reposição',s:'Ignorar redes sociais',fx:{osa:4,pr:-500,cl:-8,ru:0,sc:80},r:'Prateleiras voltaram, mas reputação danificada.',g:false}]},
+  {id:'e29',diff:3,cat:'Sustentabilidade',icon:'🌿',color:'var(--l)',
+   title:'Oportunidade de reduzir desperdício com IA',
+   desc:'Parceiro propõe sistema de IA para reduzir desperdício de perecíveis em 40%. Investimento: R$3.000.',
+   imp:[{t:'p',l:'⬆ Redução desperdício'},{t:'w',l:'⚠ Investimento'}],
+   ch:[{i:'🌱',n:'Implementar Sistema',s:'Investir em sustentabilidade',fx:{osa:3,pr:-1000,cl:7,ru:-1,sc:170},r:'Sistema implementado. Desperdício -38%. Clientes aprovam!',g:true},
+       {i:'💰',n:'Priorizar Caixa',s:'Não investir agora',fx:{osa:0,pr:0,cl:0,ru:0,sc:20},r:'Oportunidade perdida. Concorrentes à frente.',g:false}]},
+  {id:'e30',diff:3,cat:'Expansão',icon:'🏗️',color:'var(--o)',
+   title:'Proposta de ampliar seção de hortifruti',
+   desc:'Oportunidade de dobrar a área de hortifruti com nova seção refrigerada. Custo: R$8.000.',
+   imp:[{t:'p',l:'⬆ Variedade produtos'},{t:'w',l:'⚠ Alto investimento'}],
+   ch:[{i:'📈',n:'Expandir Seção',s:'Investir no crescimento',fx:{osa:5,pr:-2000,cl:10,ru:0,sc:200},r:'Nova seção um sucesso! Fluxo de clientes +20%.',g:true},
+       {i:'🔒',n:'Manter Atual',s:'Conservar capital',fx:{osa:0,pr:0,cl:-2,ru:0,sc:15},r:'Sem expansão. Clientes notaram a limitação.',g:false}]}
+];
+
+/* separate crisis events */
+const CRISIS_EVENTS = ALL_EVENTS.filter(e=>e.diff===4);
+const EASY_EVENTS   = ALL_EVENTS.filter(e=>e.diff===1);
+const MID_EVENTS    = ALL_EVENTS.filter(e=>e.diff===2);
+const HARD_EVENTS   = ALL_EVENTS.filter(e=>e.diff===3);
+
+/* Minigame categories */
+const CATS=[
+  {id:'beb',label:'Bebidas',   color:'var(--c)', bg:'rgba(0,229,255,.12)',  slots:3,items:[{e:'🥤'},{e:'🧃'},{e:'🍵'}]},
+  {id:'lat',label:'Laticínios',color:'var(--v)', bg:'rgba(213,128,255,.12)',slots:3,items:[{e:'🥛'},{e:'🧀'},{e:'🍦'}]},
+  {id:'hrt',label:'Hortifruti',color:'var(--l)', bg:'rgba(178,255,89,.12)', slots:3,items:[{e:'🍎'},{e:'🥦'},{e:'🍌'}]},
+  {id:'mer',label:'Mercearia', color:'var(--a)', bg:'rgba(255,202,40,.12)', slots:3,items:[{e:'🥖'},{e:'🫙'},{e:'🍫'}]},
+];
+
+/* ════════════════════════════════════
+   STATE
+════════════════════════════════════ */
+const G={
+  day:1, osa:97, profit:0, clients:95, ruptures:0, score:0,
+  osaHist:[97], pending:[], curEv:null, answered:false,
+  log:[], toastT:null,
+  playerName:'', profile:'profit',
+  dayEvents:{},   /* pre-built schedule */
+  lastScore:0,
+  /* mini */
+  active:false, pts:0, combo:1, timeLeft:30,
+  spawnId:null, tickId:null, dragEl:null, ghost:null, touchEl:null,
+};
+let seq=0;
+
+/* ════════════════════════════════════
+   HELPERS
+════════════════════════════════════ */
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const fmt=v=>{const a=Math.abs(v).toLocaleString('pt-BR');return v>=0?'R$'+a:'-R$'+a;};
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ════════════════════════════════════
+   BUILD SCHEDULE
+   Day 1-2: 3 easy each
+   Day 3-4: 3 mid each
+   Day 5:   1 crisis + 2 hard
+════════════════════════════════════ */
+function buildSchedule(){
+  const easy = shuffle(EASY_EVENTS).slice(0,6);
+  const mid  = shuffle(MID_EVENTS).slice(0,6);
+  const hard = shuffle(HARD_EVENTS).slice(0,2);
+  const crisis = CRISIS_EVENTS[rnd(0,CRISIS_EVENTS.length-1)];
+  return {
+    1: easy.slice(0,3),
+    2: easy.slice(3,6),
+    3: mid.slice(0,3),
+    4: mid.slice(3,6),
+    5: [crisis, ...hard],
+  };
+}
+
+/* ════════════════════════════════════
+   PROFILE BONUS
+════════════════════════════════════ */
+function applyProfileBonus(fx, evId){
+  const p = PROFILES[G.profile];
+  const f = {...fx};
+  if(G.profile==='profit')  f.pr = Math.round(f.pr * (f.pr>0?p.mult:1));
+  if(G.profile==='clients') f.cl = Math.round(f.cl * (f.cl>0?p.mult:1));
+  if(G.profile==='ops'&&f.ru>0) f.ru = Math.max(0, f.ru-1);
+  if(G.profile==='tech'&&TECH_EVENTS.includes(evId)){
+    f.osa=Math.round(f.osa*p.mult); f.pr=Math.round(f.pr*p.mult);
+    f.cl=Math.round(f.cl*p.mult); f.sc=Math.round(f.sc*p.mult);
+  }
+  return f;
+}
+
+/* ════════════════════════════════════
+   DIFF INFO
+════════════════════════════════════ */
+function diffInfo(day){
+  if(day<=2) return {label:'FÁCIL',   cls:'diff-easy'};
+  if(day<=4) return {label:'MÉDIO',   cls:'diff-mid'};
+  return            {label:'🔥 CRISE',cls:'diff-crisis'};
+}
+
+/* ════════════════════════════════════
+   LOG
+════════════════════════════════════ */
+function addLog(msg,type='info'){
+  G.log.unshift({msg,type,d:G.day});
+  if(G.log.length>30)G.log.pop();
+  renderLog();
+}
+function renderLog(){
+  const el=document.getElementById('loglist');
+  if(!el)return;
+  el.innerHTML=G.log.slice(0,12).map(e=>`<div class="le ${e.type}"><span class="le-t">D${e.d}</span>${e.msg}</div>`).join('');
+}
+
+/* ════════════════════════════════════
+   UPDATE UI
+════════════════════════════════════ */
+function updateUI(){
+  document.getElementById('m-osa').textContent   =G.osa.toFixed(1)+'%';
+  document.getElementById('m-profit').textContent=fmt(G.profit);
+  document.getElementById('m-sat').textContent   =cl(G.clients,0,100).toFixed(0)+'%';
+  document.getElementById('m-rupt').textContent  =G.ruptures;
+  document.getElementById('m-score').textContent =G.score;
+  document.getElementById('mb-osa').style.width   =cl(G.osa,0,100)+'%';
+  document.getElementById('mb-profit').style.width=cl((G.profit+20000)/40000*100,0,100)+'%';
+  document.getElementById('mb-sat').style.width   =cl(G.clients,0,100)+'%';
+  document.getElementById('mb-rupt').style.width  =cl(G.ruptures*6,0,100)+'%';
+  document.getElementById('mb-score').style.width =cl(G.score/30,0,100)+'%';
+  document.getElementById('day-badge').textContent=`DIA ${G.day} / 5`;
+  const di=diffInfo(G.day);
+  const dc=document.getElementById('diff-chip');
+  dc.textContent=di.label; dc.className='diff-chip '+di.cls;
+  updateGauge();
+  renderDayTrack();
+}
+
+function updateGauge(){
+  const p=cl(G.osa,0,100);
+  const off=194.8-(194.8*p/100);
+  let col,icon,txt,tier;
+  if(p>=98){col='var(--l)';icon='🏆';txt='Excelência operacional';tier='gold';}
+  else if(p>=95){col='var(--c)';icon='✅';txt='Disponibilidade saudável';tier='silver';}
+  else if(p>=90){col='var(--a)';icon='⚠️';txt='Atenção às rupturas';tier='bronze';}
+  else{col='var(--r)';icon='🚨';txt='Nível crítico!';tier='crit';}
+  const tr=document.getElementById('gtrack');
+  const nm=document.getElementById('gnum');
+  const st=document.getElementById('gstatus');
+  if(tr){tr.style.stroke=col;tr.style.strokeDashoffset=off;}
+  if(nm){nm.style.fill=col;nm.textContent=p.toFixed(0)+'%';}
+  if(st){st.innerHTML=`<span>${icon}</span><span>${txt}</span>`;st.style.color=col;}
+  document.querySelectorAll('.tier').forEach(r=>r.classList.toggle('active',r.dataset.tier===tier));
+}
+
+function renderDayTrack(){
+  const el=document.getElementById('dtrack');
+  if(!el)return;
+  let h='';
+  for(let d=1;d<=5;d++){
+    const isCrisis=d===5;
+    const cls=d<G.day?'done':d===G.day?(isCrisis?'crisis':'cur'):'';
+    h+=`<div class="dt-node ${cls}">${isCrisis?'🔥':d}</div>`;
+    if(d<5)h+=`<div class="dt-line ${d<G.day?'done':''}"></div>`;
+  }
+  el.innerHTML=h;
+}
+
+/* ════════════════════════════════════
+   TOAST / FLOATERS / PARTICLES
+════════════════════════════════════ */
+function toast(ico,ttl,body,tags,good){
+  document.getElementById('t-ico').textContent=ico;
+  document.getElementById('t-ttl').textContent=ttl;
+  document.getElementById('t-body').textContent=body;
+  document.getElementById('t-tags').innerHTML=tags.map(t=>`<span class="ttag ${t.startsWith('+')?'up':'dn'}">${t}</span>`).join('');
+  const el=document.getElementById('toast');
+  el.className='toast show '+(good?'good':'bad');
+  clearTimeout(G.toastT);
+  G.toastT=setTimeout(()=>{el.className='toast';},4000);
+}
+function floatNum(txt,good){
+  const el=document.createElement('div');
+  el.className='fnum '+(good?'up':'dn');
+  el.textContent=txt;el.style.left=rnd(20,70)+'vw';el.style.top=rnd(20,60)+'vh';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1500);
+}
+function burst(x,y,col,n=10){
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div');p.className='particle';
+    const sz=rnd(4,10);
+    p.style.cssText=`width:${sz}px;height:${sz}px;background:${col};left:${x}px;top:${y}px;--dx:${rnd(-80,80)}px;--dy:${rnd(-100,-20)}px;animation-duration:${rnd(600,1200)}ms;animation-delay:${rnd(0,200)}ms;`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),1400);
+  }
+}
+
+/* ════════════════════════════════════
+   EVENTS
+════════════════════════════════════ */
+function renderEvent(ev){
+  G.curEv=ev;G.answered=false;
+  document.getElementById('ep-info').textContent=`${ev.icon} ${ev.cat.toUpperCase()}`;
+  const di=diffInfo(G.day);
+  const diffBadge=ev.diff===4?`<div class="ev-diff-badge" style="color:var(--r);background:rgba(255,77,109,.12);border-color:rgba(255,77,109,.3)">🔥 CRISE</div>`:
+    ev.diff===3?`<div class="ev-diff-badge" style="color:var(--a);background:rgba(255,202,40,.1);border-color:rgba(255,202,40,.3)">DIFÍCIL</div>`:
+    ev.diff===2?`<div class="ev-diff-badge" style="color:var(--c);background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.2)">MÉDIO</div>`:'';
+  const impH=ev.imp.map(i=>`<span class="ev-imp ${i.t==='p'?'eip':i.t==='w'?'eiw':'eii'}">${i.l}</span>`).join('');
+  const prof=PROFILES[G.profile];
+  const isTechBonus=G.profile==='tech'&&TECH_EVENTS.includes(ev.id);
+  const chH=ev.ch.map((ch,i)=>{
+    const hasProfBonus=(G.profile==='profit'&&ch.fx.pr>0)||(G.profile==='clients'&&ch.fx.cl>0)||(G.profile==='ops'&&ch.fx.ru>0)||(isTechBonus);
+    return`<button class="choice" data-idx="${i}">
+      <div class="ch-inner">
+        <span class="ch-icon">${ch.i}</span>
+        <span class="ch-name">${ch.n}</span>
+        <span class="ch-sub">${ch.s}</span>
+        ${hasProfBonus?`<span class="profile-bonus" style="display:block">${prof.icon} Bônus ${prof.name} ativo</span>`:''}
+      </div>
+    </button>`;
+  }).join('');
+  document.getElementById('ev-container').innerHTML=`
+    <div class="ev-card">
+      <div class="ev-accent" style="background:${ev.color}"></div>
+      <div class="ev-accent-top" style="background:${ev.color}"></div>
+      ${diffBadge}
+      <div class="ev-type" style="color:${ev.color};background:${ev.color}15;border:1px solid ${ev.color}35">${ev.icon}&nbsp;${ev.cat}</div>
+      <div class="ev-title">${ev.title}</div>
+      <div class="ev-desc">${ev.desc}</div>
+      <div class="ev-imps">${impH}</div>
+      <div class="choices">${chH}</div>
+    </div>`;
+  document.querySelectorAll('.choice').forEach(b=>{
+    b.addEventListener('click',()=>applyChoice(parseInt(b.dataset.idx)));
+  });
+}
+
+function showNoEvent(){
+  const done=G.day>5;
+  document.getElementById('ep-info').textContent='TURNO ENCERRADO';
+  document.getElementById('ev-container').innerHTML=`
+    <div class="no-ev">
+      <div class="no-ev-ring">✅</div>
+      <div class="no-ev-text">${done?'Operação encerrada!':'Todos os eventos do dia resolvidos!'}</div>
+      ${done?'':`<button class="btn-next" id="btn-nd">⏭ &nbsp;AVANÇAR DIA ${G.day+1}</button>`}
+    </div>`;
+  if(!done)document.getElementById('btn-nd').addEventListener('click',nextDay);
+}
+
+function applyChoice(idx){
+  if(G.answered)return;
+  G.answered=true;
+  const ch=G.curEv.ch[idx];
+  const fx=applyProfileBonus(ch.fx, G.curEv.id);
+  G.osa      =cl(G.osa+fx.osa,60,100);
+  G.profit  +=fx.pr;
+  G.clients  =cl(G.clients+fx.cl,0,100);
+  G.ruptures =cl(G.ruptures+fx.ru,0,99);
+  G.score    =Math.max(0,G.score+fx.sc);
+  G.osaHist.push(G.osa);
+  updateUI();
+  const tags=[];
+  if(fx.osa!==0)tags.push((fx.osa>0?'+':'')+fx.osa.toFixed(1)+'% OSA');
+  if(fx.pr!==0) tags.push((fx.pr>0?'+':'')+fmt(fx.pr));
+  if(fx.cl!==0) tags.push((fx.cl>0?'+':'')+fx.cl+'% sat.');
+  if(fx.ru>0)   tags.push('+'+fx.ru+' rupt.');
+  if(fx.ru<0)   tags.push(fx.ru+' rupt.');
+  toast(ch.g?'✅':'⚠️',ch.g?'Boa decisão!':'Consequência negativa',ch.r,tags,ch.g);
+  if(fx.osa!==0)floatNum((fx.osa>0?'+':'')+fx.osa.toFixed(1)+'%',fx.osa>0);
+  if(fx.pr!==0) floatNum((fx.pr>0?'+':'')+fmt(fx.pr),fx.pr>0);
+  if(ch.g){
+    const btn=document.querySelector('.choice[data-idx="'+idx+'"]');
+    if(btn){const r=btn.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--l)',12);}
+  }
+  addLog(ch.r,ch.g?'good':'bad');
+  G.pending=G.pending.filter(e=>e.id!==G.curEv.id);
+  setTimeout(()=>G.pending.length?renderEvent(G.pending[0]):showNoEvent(),1100);
+}
+
+/* ════════════════════════════════════
+   DAYS
+════════════════════════════════════ */
+function nextDay(){
+  if(G.day>5){endGame();return;}
+  const decay=rnd(0,2);
+  G.osa=cl(G.osa-decay,60,100);
+  if(decay>0)addLog(`Degradação natural OSA: -${decay}%`,'bad');
+  const base=rnd(1200,3500);
+  G.profit+=base;
+  addLog(`Resultado base dia ${G.day}: +${fmt(base)}`,'good');
+  G.osaHist.push(G.osa);
+  if(G.day>=5){G.day++;updateUI();setTimeout(endGame,700);return;}
+  G.day++;
+  updateUI();
+  G.pending=[...G.dayEvents[G.day]];
+  renderEvent(G.pending[0]);
+}
+
+/* ════════════════════════════════════
+   FINAL SCORE CALC
+════════════════════════════════════ */
+function calcFinalScore(avg){
+  const osaPts  = Math.round(avg * 12);
+  const profPts = Math.round(cl(G.profit/500, -200, 300));
+  const satPts  = Math.round(cl(G.clients,0,100) * 6);
+  const ruptPts = Math.round(cl(-G.ruptures*25, -500, 0));
+  const miniPts = Math.round(G.pts*2);
+  const profBonus = G.profile==='profit'?50:G.profile==='clients'?40:G.profile==='ops'?45:G.profile==='tech'?55:0;
+  return Math.max(0, osaPts+profPts+satPts+ruptPts+miniPts+profBonus+G.score);
+}
+
+/* ════════════════════════════════════
+   END GAME
+════════════════════════════════════ */
+function endGame(){
+  stopMini();
+  const avg=G.osaHist.length?G.osaHist.reduce((a,b)=>a+b,0)/G.osaHist.length:G.osa;
+  const finalScore=calcFinalScore(avg);
+  G.lastScore=finalScore;
+  let trophy,title,cls,msg;
+  if(avg>=98){trophy='🏆';title='LOJA OURO';cls='gold';msg='Excelência operacional! Você domina o OSA. Referência no setor varejista.'}
+  else if(avg>=95){trophy='🥈';title='LOJA PRATA';cls='silver';msg='Operação saudável! Bom desempenho com pequenas oportunidades de melhoria.'}
+  else if(avg>=90){trophy='🥉';title='LOJA BRONZE';cls='bronze';msg='Atenção às rupturas! Há espaço para melhorar a disponibilidade em prateleira.'}
+  else{trophy='❌';title='NÍVEL CRÍTICO';cls='crit';msg='Perda significativa de vendas. Revise reposição, comunicação e uso do ERP.'}
+  showScreen('end-screen');
+  document.getElementById('e-trophy').textContent=trophy;
+  document.getElementById('e-title').textContent=title;
+  const badge=document.getElementById('e-badge');
+  badge.textContent=title;badge.className='e-badge '+cls;
+  document.getElementById('e-msg').textContent=msg;
+  const prof=PROFILES[G.profile];
+  document.getElementById('e-profile-used').textContent=`Perfil jogado: ${prof.icon} ${prof.name}`;
+  document.getElementById('score-big').textContent=finalScore.toLocaleString('pt-BR');
+  const po=G.profit>=0;
+  document.getElementById('rgrid').innerHTML=`
+    <div class="rcard"><div class="rcard-glow" style="background:var(--c)"></div><span class="rcard-ico">📊</span><span class="rcard-val" style="color:var(--c)">${avg.toFixed(1)}%</span><span class="rcard-lbl">OSA Médio</span></div>
+    <div class="rcard"><div class="rcard-glow" style="background:${po?'var(--l)':'var(--r)'}"></div><span class="rcard-ico">${po?'💰':'📉'}</span><span class="rcard-val" style="color:${po?'var(--l)':'var(--r)'}">${fmt(G.profit)}</span><span class="rcard-lbl">Lucro Final</span></div>
+    <div class="rcard"><div class="rcard-glow" style="background:var(--v)"></div><span class="rcard-ico">😊</span><span class="rcard-val" style="color:var(--v)">${cl(G.clients,0,100).toFixed(0)}%</span><span class="rcard-lbl">Satisfação</span></div>
+    <div class="rcard"><div class="rcard-glow" style="background:var(--r)"></div><span class="rcard-ico">⚠️</span><span class="rcard-val" style="color:var(--r)">${G.ruptures}</span><span class="rcard-lbl">Rupturas</span></div>
+    <div class="rcard"><div class="rcard-glow" style="background:var(--a)"></div><span class="rcard-ico">⭐</span><span class="rcard-val" style="color:var(--a)">${finalScore.toLocaleString('pt-BR')}</span><span class="rcard-lbl">Pontuação</span></div>`;
+  const ep=Math.min(100,Math.round(avg));
+  document.getElementById('effpct').textContent=ep+'%';
+  setTimeout(()=>{document.getElementById('effseg').style.width=ep+'%';},500);
+  /* save to Firebase */
+  saveScore(finalScore, avg, cls);
+}
+
+/* ════════════════════════════════════
+   FIREBASE: SAVE & LOAD
+════════════════════════════════════ */
+function saveScore(score, avg, cls){
+  const entry={
+    name: G.playerName||'Anônimo',
+    profile: PROFILES[G.profile].name,
+    profileIcon: PROFILES[G.profile].icon,
+    score,
+    osa: parseFloat(avg.toFixed(1)),
+    cls,
+    ts: Date.now(),
+    date: new Date().toLocaleDateString('pt-BR')
+  };
+  DB.ref('ranking').push(entry)
+    .then(()=>{console.log('Score saved');})
+    .catch(e=>{console.warn('Firebase error:',e);});
+}
+
+function loadRanking(myName, callback){
+  DB.ref('ranking').orderByChild('score').limitToLast(20).once('value')
+    .then(snap=>{
+      const rows=[];
+      snap.forEach(child=>{rows.push({key:child.key,...child.val()});});
+      rows.sort((a,b)=>b.score-a.score);
+      callback(rows, myName);
+    })
+    .catch(e=>{
+      console.warn('Ranking load error:',e);
+      callback([], myName);
+    });
+}
+
+function showRankingScreen(showSaved){
+  showScreen('ranking-screen');
+  const banner=document.getElementById('rank-saved-banner');
+  banner.style.display=showSaved?'block':'none';
+  document.getElementById('rank-body').innerHTML=`<div class="rank-loading"><div class="rank-spinner"></div>Carregando ranking...</div>`;
+  loadRanking(G.playerName,(rows, myName)=>{
+    if(!rows.length){
+      document.getElementById('rank-body').innerHTML=`<div class="rank-empty">Nenhuma pontuação ainda. Seja o primeiro!</div>`;
+      return;
+    }
+    const medals=['🥇','🥈','🥉'];
+    document.getElementById('rank-body').innerHTML=rows.map((r,i)=>{
+      const isMe=r.name===myName&&r.score===G.lastScore;
+      const posCls=i<3?`p${i+1}`:'';
+      const pos=i<3?medals[i]:`${i+1}`;
+      return`<div class="rank-row${isMe?' me':''}">
+        <div class="rank-pos ${posCls}">${pos}</div>
+        <div>
+          <div class="rank-name">${r.name}${isMe?' ← você':''}</div>
+          <div class="rank-profile">${r.profileIcon} ${r.profile}</div>
+        </div>
+        <div class="rank-score">${(r.score||0).toLocaleString('pt-BR')}</div>
+        <div><span class="rank-badge ${r.cls||'crit'}">${r.cls==='gold'?'🏆 Ouro':r.cls==='silver'?'🥈 Prata':r.cls==='bronze'?'🥉 Bronze':'❌ Crítico'}</span></div>
+        <div class="rank-date">${r.date||''}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
+/* ════════════════════════════════════
+   SCREENS
+════════════════════════════════════ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(){
+  const nameEl=document.getElementById('player-name');
+  const name=(nameEl.value||'').trim();
+  if(!name){nameEl.focus();nameEl.style.borderColor='var(--r)';return;}
+  nameEl.style.borderColor='';
+  Object.assign(G,{
+    day:1,osa:97,profit:0,clients:95,ruptures:0,score:0,
+    osaHist:[97],pending:[],curEv:null,answered:false,
+    log:[],toastT:null,playerName:name,lastScore:0,
+    active:false,pts:0,combo:1,timeLeft:30,
+    spawnId:null,tickId:null,dragEl:null,ghost:null,touchEl:null,
+  });
+  seq=0;
+  G.dayEvents=buildSchedule();
+  showScreen('game-screen');
+  buildShelves();
+  updateUI();
+  G.pending=[...G.dayEvents[1]];
+  renderEvent(G.pending[0]);
+  addLog(`Bem-vindo, ${name}! Operação iniciada. Boa sorte!`,'info');
+}
+
+/* ════════════════════════════════════
+   MINIGAME
+════════════════════════════════════ */
+function buildShelves(){
+  const el=document.getElementById('shelves');if(!el)return;
+  el.innerHTML=CATS.map(cat=>`
+    <div class="shelf-row">
+      <div class="shelf-lbl" style="color:${cat.color}">${cat.label}</div>
+      <div class="shelf-slots" id="sh-${cat.id}" data-cat="${cat.id}">
+        ${Array(cat.slots).fill(0).map((_,i)=>`<div class="sslot" id="ss-${cat.id}-${i}"></div>`).join('')}
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('.shelf-slots').forEach(sh=>{
+    sh.addEventListener('dragover',e=>{e.preventDefault();sh.classList.add('dov');});
+    sh.addEventListener('dragleave',()=>sh.classList.remove('dov'));
+    sh.addEventListener('drop',e=>{e.preventDefault();sh.classList.remove('dov');handleDrop(sh.dataset.cat,sh);});
+  });
+}
+function depot(){return document.getElementById('mini-depot');}
+function spawnProd(){
+  const d=depot();if(!d||d.querySelectorAll('.mprod').length>=4)return;
+  const cat=CATS[rnd(0,CATS.length-1)];
+  const item=cat.items[rnd(0,cat.items.length-1)];
+  const id='p'+(++seq);
+  const el=document.createElement('div');
+  el.className='mprod';el.id=id;el.draggable=true;el.dataset.cat=cat.id;
+  el.style.borderColor=cat.color+'44';
+  el.innerHTML=`<span class="mp-e">${item.e}</span><span class="mp-c" style="background:${cat.bg};color:${cat.color}">${cat.label}</span>`;
+  el.addEventListener('dragstart',e=>{G.dragEl=el;el.classList.add('dragging');e.dataTransfer.setData('text/plain',id);});
+  el.addEventListener('dragend',()=>{el.classList.remove('dragging');G.dragEl=null;});
+  el.addEventListener('touchstart',ts,{passive:false});
+  el.addEventListener('touchmove',tm,{passive:false});
+  el.addEventListener('touchend',te,{passive:false});
+  d.appendChild(el);
+}
+function handleDrop(targetCat,shelfEl){
+  const prod=G.dragEl;if(!prod)return;
+  if(prod.dataset.cat===targetCat){
+    const slot=shelfEl.querySelector('.sslot:not(.filled)');
+    if(!slot){toast('📦','Prateleira cheia!','Aguarde espaço liberar.',[],false);return;}
+    slot.textContent=prod.querySelector('.mp-e').textContent;
+    slot.classList.add('filled');prod.remove();
+    G.combo=Math.min(G.combo+1,8);
+    const pts=10*G.combo;G.pts+=pts;
+    updateMiniUI();
+    if(G.combo>=3)showCombo(G.combo);
+    floatNum('+'+pts,true);
+    const r=slot.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--l)',8);
+    setTimeout(()=>{slot.classList.remove('filled');slot.textContent='';},2200);
+  } else {
+    const slot=shelfEl.querySelector('.sslot');
+    if(slot){slot.classList.add('wrong');setTimeout(()=>slot.classList.remove('wrong'),400);}
+    G.combo=1;updateMiniUI();
+    const nm=CATS.find(c=>c.id===prod.dataset.cat)?.label||'?';
+    toast('❌','Categoria errada!',`Produto pertence a "${nm}"`,['-Combo reset'],false);
+  }
+}
+function showCombo(n){
+  const el=document.createElement('div');el.className='combo-badge';
+  const msgs={3:'✨ COMBO x3!',4:'🔥 COMBO x4!',5:'💥 COMBO x5!',6:'⚡ COMBO x6!',7:'🌟 COMBO x7!',8:'👑 MÁXIMO x8!'};
+  el.textContent=msgs[n]||`🔥 x${n}!`;
+  el.style.color=n>=6?'var(--a)':n>=4?'var(--v)':'var(--l)';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),950);
+}
+function updateMiniUI(){
+  document.getElementById('ms-pts').textContent=G.pts;
+  document.getElementById('ms-combo').textContent='x'+G.combo;
+}
+function ts(e){
+  G.touchEl=e.currentTarget;const t=e.touches[0];
+  G.ghost=G.touchEl.cloneNode(true);
+  Object.assign(G.ghost.style,{position:'fixed',width:'50px',height:'54px',pointerEvents:'none',zIndex:'9000',opacity:'.9',transform:'scale(1.15) rotate(5deg)',left:(t.clientX-25)+'px',top:(t.clientY-27)+'px',borderRadius:'10px',background:'var(--s3)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 24px rgba(0,0,0,.6)'});
+  document.body.appendChild(G.ghost);G.touchEl.style.opacity='.25';e.preventDefault();
+}
+function tm(e){if(!G.ghost)return;const t=e.touches[0];G.ghost.style.left=(t.clientX-25)+'px';G.ghost.style.top=(t.clientY-27)+'px';e.preventDefault();}
+function te(e){
+  if(!G.ghost||!G.touchEl)return;const t=e.changedTouches[0];
+  G.ghost.remove();G.ghost=null;G.touchEl.style.opacity='';
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  const sh=under?.closest('.shelf-slots');
+  if(sh){G.dragEl=G.touchEl;handleDrop(sh.dataset.cat,sh);G.dragEl=null;}
+  G.touchEl=null;
+}
+function startMini(){
+  G.active=true;G.timeLeft=30;G.combo=1;
+  depot().querySelectorAll('.mprod').forEach(p=>p.remove());
+  document.querySelectorAll('.sslot').forEach(s=>{s.classList.remove('filled');s.textContent='';});
+  document.getElementById('mini-btn').textContent='⏹ PARAR';
+  updateMiniUI();
+  document.getElementById('ms-time').textContent='30s';
+  document.getElementById('ms-tnum').textContent='30s';
+  document.getElementById('ms-tbar').style.width='100%';
+  spawnProd();
+  G.spawnId=setInterval(spawnProd,1600);
+  G.tickId=setInterval(()=>{
+    G.timeLeft--;
+    const s=G.timeLeft+'s';
+    document.getElementById('ms-time').textContent=s;
+    document.getElementById('ms-tnum').textContent=s;
+    document.getElementById('ms-tbar').style.width=(G.timeLeft/30*100)+'%';
+    if(G.timeLeft<=6)document.getElementById('ms-tnum').style.color='var(--r)';
+    if(G.timeLeft<=0)stopMini();
+  },1000);
+}
+function stopMini(){
+  if(!G.active)return;G.active=false;
+  clearInterval(G.spawnId);clearInterval(G.tickId);
+  depot().querySelectorAll('.mprod').forEach(p=>p.remove());
+  document.getElementById('mini-btn').textContent='▶ INICIAR';
+  document.getElementById('ms-tbar').style.width='100%';
+  document.getElementById('ms-time').textContent='30s';
+  document.getElementById('ms-tnum').style.color='var(--t3)';
+  document.getElementById('ms-tnum').textContent='30s';
+  if(G.pts>0){
+    const bon=G.pts*90,ob=Math.min(G.pts*.4,4);
+    G.profit+=bon;G.osa=cl(G.osa+ob,0,100);G.score+=Math.floor(G.pts*1.5);
+    updateUI();
+    addLog(`Reposição: ${G.pts} prod → +${fmt(bon)}, +${ob.toFixed(1)}% OSA`,'good');
+    toast('📦','Reposição Concluída!',`${G.pts} produtos repostos!`,['+'+fmt(bon),'+'+ob.toFixed(1)+'% OSA'],true);
+  }
+}
+function toggleMini(){G.active?stopMini():startMini();}
+function resetMini(){
+  stopMini();G.pts=0;G.combo=1;updateMiniUI();
+  document.getElementById('ms-time').textContent='30s';
+  document.getElementById('ms-tnum').textContent='30s';
+}
+
+/* ════════════════════════════════════
+   BOOT
+════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  /* profile selection */
+  document.querySelectorAll('.pcard').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('sel'));
+      card.classList.add('sel');
+      G.profile=card.dataset.profile;
+      const prof=PROFILES[G.profile];
+      const chip=document.getElementById('profile-chip');
+      chip.textContent=`${prof.icon} ${prof.name.toUpperCase()}`;
+    });
+  });
+  document.getElementById('btn-start').addEventListener('click',startGame);
+  document.getElementById('btn-view-rank').addEventListener('click',()=>{G.lastScore=0;showRankingScreen(false);});
+  document.getElementById('btn-restart').addEventListener('click',()=>showScreen('intro-screen'));
+  document.getElementById('btn-see-rank').addEventListener('click',()=>showRankingScreen(true));
+  document.getElementById('btn-back').addEventListener('click',()=>{
+    const prev=G.lastScore>0?'end-screen':'intro-screen';
+    showScreen(prev);
+  });
+  document.getElementById('mini-btn').addEventListener('click',toggleMini);
+  document.getElementById('mini-reset').addEventListener('click',resetMini);
+  document.getElementById('player-name').addEventListener('keydown',e=>{if(e.key==='Enter')startGame();});
+  showScreen('intro-screen');
+});
+</script>
+</body>
+</html>
